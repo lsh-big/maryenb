@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: maryenb
+      POSTGRES_PASSWORD: maryenb_local
+      POSTGRES_DB: maryenb
+    ports:
+      - "5432:5432"
+    volumes:
+      - maryenb-postgres:/var/lib/postgresql/data
+
+volumes:
+  maryenb-postgres:
