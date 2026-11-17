@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch, withBasePath } from "../../lib/client-api";
+
 import Link from "next/link";
 import { useState } from "react";
 
@@ -14,12 +16,12 @@ export default function LoginPage() {
     setBusy(true); setError("");
     try {
       const fields = event ? Object.fromEntries(new FormData(event.currentTarget)) : {};
-      const response = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...fields, action, consent: fields.consent === "on" }) });
+      const response = await apiFetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...fields, action, consent: fields.consent === "on" }) });
       const data = await response.json();
       if (!response.ok) { if (action === "guest") setGuestEnabled(false); throw new Error(data.error); }
       const next = new URLSearchParams(window.location.search).get("next") || "/";
       const target = new URL(next, window.location.origin);
-      window.location.assign(target.origin === window.location.origin ? target.pathname + target.search + target.hash : "/");
+      window.location.assign(target.origin === window.location.origin ? withBasePath(target.pathname + target.search + target.hash) : withBasePath("/"));
     } catch (e) { setError(e.message); setBusy(false); }
   }
 
@@ -34,6 +36,6 @@ export default function LoginPage() {
       <button className="button button-dark" disabled={busy}>{busy ? "처리 중…" : signup ? "가입하고 시작하기" : "로그인"}</button>
     </form>
     {guestEnabled && <button className="button auth-guest" type="button" disabled={busy} onClick={() => submit(null, "guest")}>회원가입 없이 게스트로 체험하기 →</button>}
-    <p className="checkout-note">시연용 계정과 가상 주문입니다. 실제 결제는 발생하지 않습니다.</p><Link className="text-link" href="/#products">상품 먼저 둘러보기</Link>
+    <p className="checkout-note">{process.env.NEXT_PUBLIC_PAGES_DEMO === "true" ? "이 브라우저에서만 사용하는 시연용 계정입니다. 실제 개인정보·비밀번호는 사용하지 마세요. 다른 기기와 계정·주문이 공유되지 않습니다." : "시연용 계정과 가상 주문입니다. 실제 결제는 발생하지 않습니다."}</p><Link className="text-link" href="/#products">상품 먼저 둘러보기</Link>
   </section>;
 }

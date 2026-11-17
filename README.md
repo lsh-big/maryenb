@@ -1,5 +1,7 @@
 # MaryenB 가상 쇼핑몰
 
+GitHub Pages 업로드·배포는 [GITHUB-PAGES.md](GITHUB-PAGES.md)를 참고하세요. `main` push 시 자동 배포하며 Pages 버전은 브라우저 저장소 기반의 시연용입니다.
+
 Next.js 기반의 세럼 쇼핑 체험 사이트입니다. 기본값은 가상 DB 모드이며 실제 PostgreSQL이나 결제 가맹점 키가 필요하지 않습니다.
 
 ## 실행

@@ -2,6 +2,7 @@ node_modules/
 .npm-cache/
 .data/
 .next/
+.pages-build/
 out/
 .env
 .env.*

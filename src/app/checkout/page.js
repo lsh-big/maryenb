@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch } from "../../lib/client-api";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Script from "next/script";
@@ -17,7 +19,7 @@ export default function CheckoutPage() {
   const [sdkReady, setSdkReady] = useState(false);
 
   async function confirm(paymentId) {
-    const response = await fetch("/api/payments/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
+    const response = await apiFetch("/api/payments/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
     setPaid(result);
@@ -26,7 +28,7 @@ export default function CheckoutPage() {
   }
 
   useEffect(() => {
-    fetch("/api/checkout").then((r) => r.json()).then(setConfig).catch(() => setError("결제 설정을 불러오지 못했습니다. 새로고침해 주세요."));
+    apiFetch("/api/checkout").then((r) => r.json()).then(setConfig).catch(() => setError("결제 설정을 불러오지 못했습니다. 새로고침해 주세요."));
     const params = new URLSearchParams(window.location.search);
     const id = params.get("paymentId");
     if (id) {
@@ -45,7 +47,7 @@ export default function CheckoutPage() {
     try {
       const data = new FormData(event.currentTarget);
       const customer = Object.fromEntries(["name", "email", "phone", "postalCode", "address", "addressDetail"].map((key) => [key, data.get(key)]));
-      const response = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ method, customer, consent: data.get("consent") === "on", items: items.map(({ slug, quantity }) => ({ slug, quantity })) }) });
+      const response = await apiFetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ method, customer, consent: data.get("consent") === "on", items: items.map(({ slug, quantity }) => ({ slug, quantity })) }) });
       const payment = await response.json();
       if (!response.ok) throw new Error(payment.error);
       if (payment.virtual) {

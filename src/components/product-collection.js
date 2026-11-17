@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { concerns } from "../data/product-guides";
 import { ProductCard } from "./product-card";
+import { apiFetch } from "../lib/client-api";
 
 export function ProductCollection({ products }) {
   const [concern, setConcern] = useState("all");
-  const filtered = products.filter((p) => concern === "all" || p.guide?.concerns.includes(concern));
+  const [inventory, setInventory] = useState([]);
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_PAGES_DEMO !== "true") return;
+    apiFetch("/api/products").then((r) => r.json()).then(setInventory).catch(() => {});
+  }, []);
+  const currentProducts = products.map((product) => ({ ...product, ...inventory.find((p) => p.slug === product.slug) }));
+  const filtered = currentProducts.filter((p) => concern === "all" || p.guide?.concerns.includes(concern));
   return <>
     <div className="concern-filters" role="group" aria-label="피부 고민별 세럼 보기">{concerns.map((item) => <button key={item.id} type="button" aria-pressed={concern === item.id} onClick={() => setConcern(item.id)}>{item.label}</button>)}</div>
     <p className="collection-count" role="status">{concerns.find((c) => c.id === concern)?.label} · {filtered.length}종 <a href="#compare">성분·사용법 한눈에 비교 ↗</a></p>

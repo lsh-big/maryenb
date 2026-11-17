@@ -2,15 +2,22 @@
 
 import Link from "next/link";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "./cart-provider";
 import { formatPrice } from "../lib/products";
 import { ProductArt } from "./product-art";
 import { QuantitySelector } from "./quantity-selector";
 import { SkinComparison } from "./skin-comparison";
+import { apiFetch } from "../lib/client-api";
 
-export function ProductDetail({ product }) {
+export function ProductDetail({ product: initialProduct }) {
+  const [localProduct, setLocalProduct] = useState(null);
+  const product = { ...initialProduct, ...localProduct };
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_PAGES_DEMO !== "true") return;
+    apiFetch("/api/products").then((r) => r.json()).then((products) => setLocalProduct(products.find((p) => p.slug === initialProduct.slug))).catch(() => {});
+  }, [initialProduct.slug]);
   const { addItem, items } = useCart();
   const router = useRouter();
   const inCart = items.find((item) => item.id === product.id)?.quantity || 0;
