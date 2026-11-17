@@ -10,8 +10,6 @@ import { ProductArt } from "./product-art";
 import { QuantitySelector } from "./quantity-selector";
 import { SkinComparison } from "./skin-comparison";
 import { apiFetch } from "../lib/client-api";
-import { ProductFacts } from "./product-facts";
-import { productFacts } from "../data/product-facts";
 
 export function ProductDetail({ product: initialProduct }) {
   const [localProduct, setLocalProduct] = useState(null);
@@ -28,7 +26,6 @@ export function ProductDetail({ product: initialProduct }) {
   const [quantity, setQuantity] = useState(1);
   const selectedQuantity = Math.max(1, Math.min(quantity, maxQuantity));
   const guide = product.guide;
-  const facts = productFacts[product.code];
   const [added, setAdded] = useState(false);
   const leadIngredient = product.ingredients.split(" · ")[0];
   const gallery = product.galleryUrls?.length
@@ -84,19 +81,19 @@ export function ProductDetail({ product: initialProduct }) {
             {product.code} · {product.category}
           </p>
           <h1>{product.name}</h1>
-          {facts && <div className="detail-primary-concern"><span>이 제품에서 먼저 살펴볼 고민</span><strong>{facts.mainConcern}</strong><small>공식 제품 안내 기준 · 해결 효과를 보장하지 않습니다.</small></div>}
           <p className="detail-tagline">{product.tagline}</p>
           {guide && <><h2 className="detail-headline">{guide.headline}</h2><div className="product-tags">{guide.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></>}
           <div className="detail-price">
-            <span className="price-context">시연 설정가</span>
             <strong>
               {product.price === null
                 ? formatPrice(product.price)
                 : `${formatPrice(product.price)}원`}
             </strong>
+            {product.compareAtPrice && (
+              <del>{formatPrice(product.compareAtPrice)}원</del>
+            )}
           </div>
           <p className="detail-volume">용량 · {product.volume}</p>
-          <a className="text-link" href="#product-facts">근거·사용감·가격 조건 확인하기 ↓</a>
           <p className="detail-description">{guide?.summary || product.description}</p>
           {guide && <div className="formula-highlights" aria-label="공식 안내 기준 주요 배합">{guide.points.map(([amount, ingredient]) => <div key={ingredient}><strong>{amount}</strong><span>{ingredient}</span></div>)}</div>}
           <div className="detail-ingredients">
@@ -123,7 +120,6 @@ export function ProductDetail({ product: initialProduct }) {
           {guide?.labelNote && <p className="label-difference">{guide.labelNote}</p>}
         </div>
       </div>
-      <ProductFacts product={product} />
       {guide && <>
         <SkinComparison code={product.code} guide={guide} />
         <section className="detail-guide-section"><div><p className="eyebrow">A ROUTINE THAT FITS YOU</p><h2>이 한 병, 이렇게 시작해요</h2><p className="guide-intro">새 세럼은 한 번에 하나씩. 피부가 편안한지 살피며 시작하세요.</p></div><dl className="routine-facts"><div><dt>사용 시간</dt><dd>{guide.timing}</dd></div><div><dt>시작 빈도</dt><dd>{guide.frequency}</dd></div><div><dt>사용감 안내</dt><dd>{guide.texture}</dd></div></dl><div className="detail-guide-tip"><h3>나의 루틴에 더하기</h3><p>{guide.tip}</p></div><div className="detail-guide-caution"><h3>{product.code === "RNT" ? "레티놀 사용 전 꼭 확인하세요" : "시작 전 알아두세요"}</h3><p>{guide.caution}</p></div></section>

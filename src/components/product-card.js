@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { formatPrice } from "../lib/products";
 import { ProductArt } from "./product-art";
-import { productFacts } from "../data/product-facts";
 
 export function ProductCard({ product, index = 0 }) {
   return (
@@ -24,7 +23,6 @@ export function ProductCard({ product, index = 0 }) {
       <div className="product-card-info">
         <div>
           <p className="product-category">{product.category}</p>
-          {productFacts[product.code] && <p className="card-primary-concern">주력 고민 · {productFacts[product.code].mainConcern}</p>}
           {product.guide && <p className="product-promise">{product.guide.headline}</p>}
           <Link className="product-name" href={`/products/${product.slug}`}>
             {product.name}
@@ -37,12 +35,14 @@ export function ProductCard({ product, index = 0 }) {
           </p>
           <p className="product-volume">{product.volume}</p>
           <p className="product-price">
-            <span className="price-context">시연 설정가</span>
             <strong>
               {product.price === null
                 ? formatPrice(product.price)
                 : `${formatPrice(product.price)}원`}
             </strong>
+            {product.compareAtPrice && (
+              <del>{formatPrice(product.compareAtPrice)}원</del>
+            )}
           </p>
           <p className="product-sales-note">{product.stock > 0 ? "재고 있음" : "품절"}</p>
           <Link className="product-store-link" href={`/products/${product.slug}`}>상품 보기 · 구매하기 →</Link>
