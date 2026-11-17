@@ -34,7 +34,7 @@ async function prepare(directory) {
     let source = await readFile(filename, "utf8");
     source = source.replaceAll('"force-dynamic"', '"force-static"');
     // Public assets need the repository prefix; Next Link prefixes routes itself.
-    source = source.replace(/(["'`])\/images\//g, `$1${base}/images/`);
+    source = source.replace(/(["'`])\/(images|videos)\//g, `$1${base}/$2/`);
     if (filename === path.join(stage, "src/app/products/[slug]/page.js")) {
       source += '\nexport function generateStaticParams() { return catalog.map(({ slug }) => ({ slug })); }\n';
     }

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { ProductCollection } from "../components/product-collection";
 import { RoutineGuide } from "../components/routine-guide";
+import { PromoVideo } from "../components/promo-video";
 import { prisma } from "../lib/prisma";
 import { serializeProduct } from "../lib/products";
 import catalog from "../data/products.json";
@@ -66,6 +67,7 @@ export default async function HomePage() {
             제품 만나보기 <ArrowRight size={16} />
           </Link>
           <Link className="hero-secondary" href="#compare">6종 세럼 비교하기 ↗</Link>
+          <Link className="hero-secondary" href="#brand-film">브랜드 영상 보기 ↗</Link>
           <span className="hero-note">
             <ArrowDown size={14} /> PRODUCT LABELS · 30 ML
           </span>
@@ -80,6 +82,8 @@ export default async function HomePage() {
           />
         </div>
       </section>
+
+      <PromoVideo />
 
       <section className="promise-strip">
         <p>성분으로 고르는 6가지 세럼</p>
