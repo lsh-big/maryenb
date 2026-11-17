@@ -72,18 +72,10 @@ export default async function HomePage() {
             <ArrowDown size={14} /> PRODUCT LABELS · 30 ML
           </span>
         </div>
-        <div className="hero-visual">
-          <Image
-            src="/images/homepage/mb-hero-lineup-20261015.jpg"
-            alt="MaryenB 페이셜 세럼 여섯 종류"
-            fill
-            priority
-            sizes="(max-width: 560px) 100vw, 50vw"
-          />
+        <div className="hero-visual hero-video">
+          <PromoVideo />
         </div>
       </section>
-
-      <PromoVideo />
 
       <section className="promise-strip">
         <p>성분으로 고르는 6가지 세럼</p>
@@ -95,11 +87,12 @@ export default async function HomePage() {
 
       <section className="brand-note" id="brand">
         <Image
-          src="/images/homepage/mb-story-square-20261015.jpg"
-          alt=""
-          width={360}
-          height={360}
-          className="brand-story-image"
+          src="/images/homepage/mb-hero-lineup-20261015.jpg"
+          alt="MaryenB 페이셜 세럼 여섯 종류 전체 사진"
+          width={1800}
+          height={1350}
+          sizes="(max-width: 560px) calc(100vw - 44px), 300px"
+          className="brand-story-image brand-lineup-image"
         />
         <div>
           <p className="eyebrow">ABOUT MARYENB</p>
