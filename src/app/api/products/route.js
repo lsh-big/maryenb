@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { serializeProduct } from "../../../lib/products";
+import { initializeCatalogInventory } from "../../../lib/catalog-inventory";
+import { isVirtualDatabase } from "../../../lib/database-mode";
+import { getVirtualProducts } from "../../../lib/virtual-db";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -12,6 +15,11 @@ export async function GET(request) {
     : 24;
 
   try {
+    if (isVirtualDatabase()) {
+      const products = (await getVirtualProducts()).filter((p) => p.isActive && (!category || p.category === category) && (featured !== "true" || p.isFeatured));
+      return NextResponse.json(products.slice(0, limit).map(serializeProduct));
+    }
+    await initializeCatalogInventory(prisma);
     const products = await prisma.product.findMany({
       where: {
         isActive: true,

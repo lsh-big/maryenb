@@ -1,21 +1,29 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowDown, ArrowRight } from "lucide-react";
-import { ProductCard } from "../components/product-card";
+import { ProductCollection } from "../components/product-collection";
+import { RoutineGuide } from "../components/routine-guide";
 import { prisma } from "../lib/prisma";
 import { serializeProduct } from "../lib/products";
 import catalog from "../data/products.json";
+import { initializeCatalogInventory } from "../lib/catalog-inventory";
+import { isVirtualDatabase } from "../lib/database-mode";
+import { getVirtualProducts } from "../lib/virtual-db";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   let products = [];
-  const databaseUnavailable = !process.env.DATABASE_URL;
+  const virtual = isVirtualDatabase();
+  const databaseUnavailable = !virtual && !process.env.DATABASE_URL;
 
-  if (databaseUnavailable) {
+  if (virtual) {
+    products = await getVirtualProducts();
+  } else if (databaseUnavailable) {
     products = catalog;
   } else {
     try {
+      await initializeCatalogInventory(prisma);
       const databaseProducts = await prisma.product.findMany({
         where: { isActive: true },
         orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
@@ -26,7 +34,7 @@ export default async function HomePage() {
         return catalogProduct
           ? {
               ...product,
-              price: catalogProduct.price,
+              price: product.price,
               compareAtPrice: catalogProduct.compareAtPrice,
               storeUrl: catalogProduct.storeUrl,
               koreaSalesNote: catalogProduct.koreaSalesNote,
@@ -43,20 +51,21 @@ export default async function HomePage() {
     <>
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">MARYENB · PRODUCT GUIDE</p>
+          <p className="eyebrow">INGREDIENTS FIRST · YOUR DAILY RITUAL</p>
           <h1>
-            라벨에 담긴 정보,
+            나를 아끼는 시간,
             <br />
-            <em>있는 그대로</em>
+            <em>마리엔비와 함께</em>
           </h1>
           <p className="hero-description">
-            MaryenB 페이셜 세럼 6종의 제품명,
+            매일의 루틴에 더하는 작은 정성.
             <br />
-            성분 표시와 용량을 확인해 보세요.
+            피부 고민과 성분으로, 나에게 맞는 한 병을 찾아보세요.
           </p>
           <Link className="button button-dark" href="#products">
             제품 만나보기 <ArrowRight size={16} />
           </Link>
+          <Link className="hero-secondary" href="#compare">6종 세럼 비교하기 ↗</Link>
           <span className="hero-note">
             <ArrowDown size={14} /> PRODUCT LABELS · 30 ML
           </span>
@@ -73,9 +82,9 @@ export default async function HomePage() {
       </section>
 
       <section className="promise-strip">
-        <p>제품 라벨 기준 안내</p>
+        <p>성분으로 고르는 6가지 세럼</p>
         <span>✳</span>
-        <p>성분과 함량 확인</p>
+        <p>새로운 루틴은 한 병부터</p>
         <span>✳</span>
         <p>30ml / 1.0 fl oz</p>
       </section>
@@ -90,19 +99,19 @@ export default async function HomePage() {
         />
         <div>
           <p className="eyebrow">ABOUT MARYENB</p>
-          <h2>MaryenB</h2>
+          <h2>성분은 분명하게,<br />나의 선택은 편안하게.</h2>
           <p>
-            네이버 스마트스토어 프로필은 MaryenB를 “검증된 성분을 과학적으로 조합한 고함량
-            더마 세럼 브랜드”로 소개합니다. 제품 정보는 각 제품 라벨에 표시된 성분,
-            함량과 용량을 기준으로 안내합니다.
+            마리엔비는 주요 성분과 함량을 공개하고, 나의 루틴에 맞는 세럼을 직접 고를 수 있도록
+            돕는 성분 중심 스킨케어 브랜드입니다. 어떤 성분을 담았는지, 어떻게 시작하는지까지.
+            확인한 정보를 바탕으로 한 병의 선택을 돕습니다.
           </p>
           <a
             className="text-link"
-            href="https://maryenb.co.kr/"
+            href="https://maryenb.co.kr/pages/brand-story-korean-skincare"
             target="_blank"
             rel="noreferrer"
           >
-            MaryenB 한국어 사이트 <ArrowRight size={15} />
+            브랜드 이야기 더 보기 <ArrowRight size={15} />
           </a>
           <div className="brand-social-links">
             <a href="https://blog.naver.com/maryenb-skincare" target="_blank" rel="noreferrer">
@@ -119,55 +128,20 @@ export default async function HomePage() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">FIND YOUR DAILY FAVORITE</p>
-            <h2>마리엔비의 제품</h2>
+            <h2>오늘 가장 신경 쓰이는 고민은?</h2>
           </div>
-          <span className="section-caption">제품 라벨 정보 · 네이버 스마트스토어 판매가</span>
+          <span className="section-caption">6가지 데일리 세럼 · 이 사이트에서 구매</span>
         </div>
         {databaseUnavailable && (
           <p className="catalog-notice">
-            DB 연결 전 미리보기 데이터를 표시하고 있습니다. 이 사이트에서는 주문을 받지 않으며,
-            최신 가격·재고·배송 및 구매 조건은 각 상품의 네이버 스마트스토어 페이지에서 확인해 주세요.
+            상품을 장바구니에 담고 주문서를 작성할 수 있습니다. 결제는 판매 서비스 연결 완료 후 이용 가능합니다.
           </p>
         )}
-        <div className="product-grid">
-          {products.map((product, index) => (
-            <ProductCard
-              key={product.id ?? product.code}
-              product={serializeProduct(product)}
-              index={index}
-            />
-          ))}
-        </div>
+        <p className="guide-intro">가장 신경 쓰이는 고민 하나를 정하고, 성분과 시작 방법을 비교해 보세요.</p>
+        <ProductCollection products={products.map(serializeProduct)} />
       </section>
 
-      <section className="ingredient-note">
-        <div className="ingredient-copy">
-          <p className="eyebrow">MARYENB · FORMULA GUIDE</p>
-          <h2>성분 이름 옆의<br /><em>함량을 확인하세요</em></h2>
-          <p>제품 라벨에 표시된 함량과 성분별 특징을 안내합니다.</p>
-        </div>
-        <div className="ingredient-list">
-          {[
-            ["VNC15", "Vitamin C 15%", "항산화 성분"],
-            ["ANC5", "Azelaic Acid 5%", "아젤라익애씨드 성분"],
-            ["ANC10", "Azelaic Acid 10%", "아젤라익애씨드 성분"],
-            ["RNT", "Retinol 5000 IU/g", "비타민 A 유도체 성분"],
-            ["TNA5", "Tranexamic Acid 5%", "트라넥삼산 성분"],
-            ["NTZ20", "Niacinamide 20%", "비타민 B3 유도체 성분"],
-          ].map(([code, ingredient, use]) => (
-            <div className="ingredient-row" key={code}>
-              <strong>{code}</strong>
-              <div className="ingredient-row-copy">
-                <span>{ingredient}</span>
-                <small>{use}</small>
-              </div>
-            </div>
-          ))}
-          <p className="ingredient-usage-note">
-            성분 특징을 간략히 안내하며, 완제품의 효능을 의미하거나 보장하지 않습니다.
-          </p>
-        </div>
-      </section>
+      <RoutineGuide />
 
       <p className="cosmetic-disclaimer">
         피부 겉모습을 위한 화장품입니다. 개인에 따라 경험은 다를 수 있습니다.

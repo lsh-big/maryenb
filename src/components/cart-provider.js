@@ -1,15 +1,24 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./auth-provider";
 
 const CartContext = createContext(null);
-const STORAGE_KEY = "maryenb-cart";
 
 export function CartProvider({ children }) {
+  const { user } = useAuth();
+  return <CartStore key={user?.id || "signed-out"} user={user}>{children}</CartStore>;
+}
+
+function CartStore({ children, user }) {
+  const router = useRouter();
+  const STORAGE_KEY = `maryenb-cart:${user?.id || "signed-out"}`;
   const [items, setItems] = useState([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!user) { setReady(true); return; }
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -21,26 +30,32 @@ export function CartProvider({ children }) {
     } finally {
       setReady(true);
     }
-  }, []);
+  }, [STORAGE_KEY, user]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !user) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch (error) {
       console.error("장바구니 정보를 저장하지 못했습니다.", error);
     }
-  }, [items, ready]);
+  }, [items, ready, STORAGE_KEY, user]);
 
   const value = useMemo(() => {
-    const addItem = (product) => {
-      if (product.price === null || product.stock < 1) return;
+    const addItem = (product, quantity = 1) => {
+      if (!user) {
+        router.push(`/login?next=${encodeURIComponent(`/products/${product.slug}`)}`);
+        return false;
+      }
+      if (product.price === null || product.stock < 1 || !Number.isInteger(quantity) || quantity < 1) return false;
+      const existing = items.find((item) => item.id === product.id);
+      if ((existing?.quantity || 0) + quantity > Math.min(product.stock, 99)) return false;
       setItems((current) => {
         const found = current.find((item) => item.id === product.id);
         if (found) {
           return current.map((item) =>
             item.id === product.id
-              ? { ...item, quantity: item.quantity + 1 }
+              ? { ...item, price: product.price, stock: product.stock, quantity: Math.min(item.quantity + quantity, product.stock, 99) }
               : item,
           );
         }
@@ -52,24 +67,27 @@ export function CartProvider({ children }) {
             name: product.name,
             price: product.price,
             imageUrl: product.imageUrl,
-            quantity: 1,
+            stock: product.stock,
+            quantity,
           },
         ];
       });
+      return true;
     };
 
     const updateQuantity = (id, quantity) => {
       setItems((current) =>
-        quantity < 1
+        !Number.isInteger(quantity) || quantity < 1
           ? current.filter((item) => item.id !== id)
           : current.map((item) =>
-              item.id === id ? { ...item, quantity } : item,
+              item.id === id ? { ...item, quantity: Math.min(quantity, item.stock ?? 99, 99) } : item,
             ),
       );
     };
 
     return {
       items,
+      clearCart: () => setItems([]),
       addItem,
       updateQuantity,
       removeItem: (id) =>
@@ -79,7 +97,7 @@ export function CartProvider({ children }) {
         ? null
         : items.reduce((sum, item) => sum + item.price * item.quantity, 0),
     };
-  }, [items]);
+  }, [items, user, router]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

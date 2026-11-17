@@ -5,9 +5,10 @@ import { Trash2 } from "lucide-react";
 import { ProductArt } from "../../components/product-art";
 import { useCart } from "../../components/cart-provider";
 import { formatPrice } from "../../lib/products";
+import { QuantitySelector } from "../../components/quantity-selector";
 
 export default function CartPage() {
-  const { items, subtotal, removeItem } = useCart();
+  const { items, subtotal, removeItem, updateQuantity } = useCart();
 
   return (
     <section className="cart-shell">
@@ -40,7 +41,7 @@ export default function CartPage() {
                       ? "판매가 확인 중"
                       : `${formatPrice(item.price)}원`}
                   </span>
-                  <span>{item.quantity}개</span>
+                  <QuantitySelector value={item.quantity} onChange={(value) => updateQuantity(item.id, value)} max={item.stock ?? 99} label={`${item.name} 수량`} />
                 </div>
                 <div className="cart-item-total">
                   <strong>
@@ -66,17 +67,13 @@ export default function CartPage() {
               <span>상품 금액</span>
               <span>{subtotal === null ? "판매가 확인 중" : `${formatPrice(subtotal)}원`}</span>
             </div>
-            <div><span>배송비</span><span>판매 조건 확정 후 안내</span></div>
+            <div><span>배송비</span><span>주문서에서 확인</span></div>
             <div className="summary-total">
               <strong>총 결제 금액</strong>
-              <strong>판매가 확인 중</strong>
+              <strong>{formatPrice(subtotal)}원 + 배송비</strong>
             </div>
-            <button className="button button-dark checkout-button" type="button" disabled>
-              판매 준비 중
-            </button>
-            <p className="checkout-note">
-              국내 판매 가격과 판매 조건이 확정되면 주문 기능을 안내합니다.
-            </p>
+            <Link className="button button-dark checkout-button" href="/checkout">주문서 작성하기</Link>
+            <p className="checkout-note">네이버페이 · 카카오페이 · 토스페이 · KG이니시스<br />최종 금액과 재고는 결제 전에 다시 확인합니다.</p>
           </aside>
         </div>
       )}

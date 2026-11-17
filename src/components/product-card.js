@@ -6,7 +6,7 @@ import { ProductArt } from "./product-art";
 
 export function ProductCard({ product, index = 0 }) {
   return (
-    <article className="product-card" style={{ "--card-index": index }}>
+    <article className="product-card" style={{ "--card-index": index, "--product-accent": product.guide?.accent, "--product-wash": product.guide?.wash }}>
       <Link
         className="product-card-image-link"
         href={`/products/${product.slug}`}
@@ -23,10 +23,12 @@ export function ProductCard({ product, index = 0 }) {
       <div className="product-card-info">
         <div>
           <p className="product-category">{product.category}</p>
+          {product.guide && <p className="product-promise">{product.guide.headline}</p>}
           <Link className="product-name" href={`/products/${product.slug}`}>
             {product.name}
           </Link>
           <p className="product-tagline">{product.tagline}</p>
+          {product.guide && <div className="product-tags">{product.guide.tags.slice(0,2).map((tag) => <span key={tag}>{tag}</span>)}</div>}
           <p className="product-ingredient">
             <span className={`ingredient-swatch swatch-${product.code.toLowerCase()}`} />
             {product.ingredients.split(" · ")[0]}
@@ -42,21 +44,8 @@ export function ProductCard({ product, index = 0 }) {
               <del>{formatPrice(product.compareAtPrice)}원</del>
             )}
           </p>
-          {product.koreaSalesNote ? (
-            <p className="product-sales-note">{product.koreaSalesNote}</p>
-          ) : product.storeUrl ? (
-            <a
-              className="product-store-link"
-              href={product.storeUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`${product.name} 네이버 스마트스토어 상품 페이지`}
-            >
-              상품 보기
-            </a>
-          ) : (
-            <p className="product-sales-note">국내 판매 정보 확인 중</p>
-          )}
+          <p className="product-sales-note">{product.stock > 0 ? "재고 있음" : "품절"}</p>
+          <Link className="product-store-link" href={`/products/${product.slug}`}>상품 보기 · 구매하기 →</Link>
         </div>
       </div>
     </article>

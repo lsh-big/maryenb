@@ -4,9 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "./cart-provider";
+import { useAuth } from "./auth-provider";
 
 export function SiteHeader() {
   const { itemCount } = useCart();
+  const { user, loading, signOut } = useAuth();
 
   return (
     <header className="site-header">
@@ -14,6 +16,7 @@ export function SiteHeader() {
         <nav className="primary-nav" aria-label="주요 메뉴">
           <Link href="/#products">SHOP</Link>
           <Link href="/#brand">BRAND</Link>
+          <Link className="nav-guide" href="/#routine">GUIDE</Link>
         </nav>
         <Link className="wordmark" href="/" aria-label="MaryenB 홈">
           <Image
@@ -24,11 +27,14 @@ export function SiteHeader() {
             priority
           />
         </Link>
-        <Link className="cart-link" href="/cart" aria-label={`장바구니 ${itemCount}개`}>
+        <div className="header-account">
+          {!loading && (user ? <div className="account-status"><span>{user.guest ? "게스트 체험 중" : `${user.name}님`}</span><button type="button" onClick={signOut}>로그아웃</button></div> : <Link className="login-link" href="/login">로그인 · 회원가입</Link>)}
+        <Link className="cart-link" href={user ? "/cart" : "/login?next=%2Fcart"} aria-label={`장바구니 ${itemCount}개`}>
           <ShoppingBag size={19} strokeWidth={1.6} />
           <span>장바구니</span>
           <span className="cart-count">{itemCount}</span>
         </Link>
+        </div>
       </div>
     </header>
   );

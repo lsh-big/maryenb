@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { seller } from "../../data/seller";
 
 export const metadata = {
   title: "판매자·이용·개인정보 안내",
@@ -13,34 +14,31 @@ export default function PoliciesPage() {
       <p className="eyebrow">PRE-LAUNCH INFORMATION</p>
       <h1>판매자·이용 안내</h1>
       <div className="policy-alert">
-        이 사이트는 네이버 스마트스토어의 공개 상품 정보를 안내하는 미리보기이며, 여기서
-        주문·결제를 받지 않습니다. 최신 가격·재고·배송 및 구매 조건은 연결된 스마트스토어에서
-        확인해 주세요.
+        자체 주문·결제는 가맹점 계약, 판매자 정보, 개인정보 처리방침 및 배송·반품 조건의
+        설정을 마친 후 제공됩니다. 현재 판매 준비 중이며 결제수단별 이용 가능 여부는 주문서에서 확인할 수 있습니다.
       </div>
 
       <section className="policy-section">
-        <h2>네이버 스마트스토어 판매자 정보</h2>
+        <h2>사이트 운영 사업자 정보</h2>
         <p>
-          네이버 스마트스토어 판매자 프로필에 공개된 표기는 다음과 같습니다. 이 정보는 해당
-          스토어의 판매자 프로필 기준이며, 이 미리보기 사이트의 운영자 정보로 간주하지 않습니다.
+          운영자가 제공한 사업자등록증명에 기재된 사업자 정보입니다.
         </p>
         <ul>
-          <li>상호: 주식회사 써티트리</li>
-          <li>대표자: 박성일</li>
-          <li>
-            공식 채널: <a href="https://blog.naver.com/maryenb-skincare" target="_blank" rel="noreferrer">네이버 블로그</a>,
-            {" "}<a href="https://instagram.com/maryenb_official" target="_blank" rel="noreferrer">인스타그램</a>
-          </li>
-          <li>사업자등록번호, 주소, 전화번호와 통신판매업 정보는 확인되지 않아 기재하지 않았습니다.</li>
+          <li>상호: {seller.name}</li>
+          <li>대표자: {seller.representative}</li>
+          <li>사업자등록번호: {seller.registrationNumber}</li>
+          <li>사업장 소재지: {seller.address}</li>
+          <li>업태: {seller.businessType}</li>
+          <li>종목: {seller.businessCategory}</li>
         </ul>
-        <p>스마트스토어 상품의 결제·배송·교환·반품 문의는 해당 스토어에 표시된 안내를 확인해 주세요.</p>
+        <p>이 사이트에서 상품을 장바구니에 담고 주문서를 작성할 수 있습니다. 결제·배송·교환·반품 조건은 판매 서비스 활성화 전에 확정하여 안내합니다.</p>
       </section>
 
       <section className="policy-section">
         <h2>개인정보 안내</h2>
         <p>
-          현재 회원가입, 주문 접수 및 결제 기능은 제공하지 않으며 이 사이트에서 구매자
-          개인정보를 수집하도록 구성하지 않았습니다. 판매 기능을 도입하기 전에는 실제
+          주문 기능 활성화 시 이름, 이메일, 연락처, 우편번호와 배송주소가 주문 및 배송 처리를 위해 저장됩니다.
+          결제 인증정보는 결제사 창에서 입력합니다. 판매 기능을 도입하기 전에는 실제
           처리 항목·목적·보유 기간·위탁 또는 제공 관계·문의 담당자를 확인해 개인정보
           처리방침을 마련해야 합니다.
         </p>
@@ -50,7 +48,7 @@ export default function PoliciesPage() {
         <h2>제품 정보와 표현 기준</h2>
         <ul>
           <li>제품명, 성분명, 함량과 용량은 제공 자료의 제품 라벨에 표시된 사실을 따릅니다.</li>
-          <li>판매가는 2026년 11월 9일 확인한 네이버 스마트스토어 30ml 단품 기준이며, 할인과 재고는 변경될 수 있습니다.</li>
+          <li>판매가는 상품 상세와 주문서에서 확인할 수 있습니다. ANC5는 15,700원, ANC10은 16,900원으로 설정했습니다.</li>
           <li>제품 사진과 라벨은 원본 그대로 사용하며 제품 병이나 표시 내용을 편집하지 않습니다.</li>
           <li>제품의 성능을 보장하거나 확인되지 않은 사용 경험을 만들어 안내하지 않습니다.</li>
           <li>
@@ -63,8 +61,8 @@ export default function PoliciesPage() {
           피부 겉모습을 위한 화장품입니다. 개인에 따라 경험은 다를 수 있습니다.
         </p>
         <p>
-          ANC5와 ANC10은 현재 한국에서 판매하지 않는 제품입니다. 다른 상품은 네이버 스마트스토어
-          링크에서 주문 정보를 확인할 수 있으며, 이 사이트 자체에서는 구매할 수 없습니다.
+          6종 세럼은 이 사이트의 상품 상세, 장바구니와 주문서에서 구매를 진행합니다.
+          실결제는 결제 서비스 설정 완료 후 가능합니다.
         </p>
       </section>
 

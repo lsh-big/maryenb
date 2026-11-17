@@ -1,6 +1,10 @@
+import { productGuides } from "../data/product-guides";
+
 export function serializeProduct(product) {
   return {
     ...product,
+    guide: productGuides[product.code] ?? null,
+    id: product.id ?? product.slug,
     price: product.price === null ? null : Number(product.price),
     compareAtPrice:
       product.compareAtPrice === null

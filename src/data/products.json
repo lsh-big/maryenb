@@ -10,10 +10,13 @@
     "volume": "30ml / 1.0 fl oz",
     "price": 15700,
     "compareAtPrice": null,
-    "storeUrl": "https://smartstore.naver.com/maryenb/products/11942936251",
+    "storeUrl": null,
     "imageUrl": "/images/product/amazon_VNC_30ml_01.png",
-    "galleryUrls": ["/images/product/amazon_VNC_30ml_01.png", "/images/product/amazon_VNC_30ml_02.png"],
-    "stock": 0,
+    "galleryUrls": [
+      "/images/product/amazon_VNC_30ml_01.png",
+      "/images/product/amazon_VNC_30ml_02.png"
+    ],
+    "stock": 100,
     "isFeatured": false,
     "isActive": true,
     "koreaSalesNote": null
@@ -27,15 +30,18 @@
     "ingredients": "Azelaic Acid 5% · Niacinamide 1% · Centella Asiatica Extract 0.1%",
     "category": "세럼",
     "volume": "30ml / 1.0 fl oz",
-    "price": null,
+    "price": 15700,
     "compareAtPrice": null,
     "storeUrl": null,
     "imageUrl": "/images/product/amazon_ANC5_30ml_01.png",
-    "galleryUrls": ["/images/product/amazon_ANC5_30ml_01.png", "/images/product/amazon_ANC5_30ml_02.png"],
-    "stock": 0,
+    "galleryUrls": [
+      "/images/product/amazon_ANC5_30ml_01.png",
+      "/images/product/amazon_ANC5_30ml_02.png"
+    ],
+    "stock": 100,
     "isFeatured": false,
     "isActive": true,
-    "koreaSalesNote": "현재 한국에서는 판매하지 않습니다."
+    "koreaSalesNote": null
   },
   {
     "slug": "anc10-azelaic-acid-serum",
@@ -46,15 +52,18 @@
     "ingredients": "Azelaic Acid 10% · Niacinamide 1% · Centella Asiatica Extract 0.1%",
     "category": "세럼",
     "volume": "30ml / 1.0 fl oz",
-    "price": null,
+    "price": 16900,
     "compareAtPrice": null,
     "storeUrl": null,
     "imageUrl": "/images/product/amazon_ANC10_30ml_01.png",
-    "galleryUrls": ["/images/product/amazon_ANC10_30ml_01.png", "/images/product/amazon_ANC10_30ml_02.png"],
-    "stock": 0,
+    "galleryUrls": [
+      "/images/product/amazon_ANC10_30ml_01.png",
+      "/images/product/amazon_ANC10_30ml_02.png"
+    ],
+    "stock": 100,
     "isFeatured": false,
     "isActive": true,
-    "koreaSalesNote": "현재 한국에서는 판매하지 않습니다."
+    "koreaSalesNote": null
   },
   {
     "slug": "rnt-retinol-serum",
@@ -67,10 +76,13 @@
     "volume": "30ml / 1.0 fl oz",
     "price": 14020,
     "compareAtPrice": 16500,
-    "storeUrl": "https://smartstore.naver.com/maryenb/products/11905570139",
+    "storeUrl": null,
     "imageUrl": "/images/product/amazon_RNT_30ml_01.png",
-    "galleryUrls": ["/images/product/amazon_RNT_30ml_01.png", "/images/product/amazon_RNT_30ml_02.png"],
-    "stock": 0,
+    "galleryUrls": [
+      "/images/product/amazon_RNT_30ml_01.png",
+      "/images/product/amazon_RNT_30ml_02.png"
+    ],
+    "stock": 100,
     "isFeatured": false,
     "isActive": true,
     "koreaSalesNote": null
@@ -86,10 +98,13 @@
     "volume": "30ml / 1.0 fl oz",
     "price": 16060,
     "compareAtPrice": 18900,
-    "storeUrl": "https://smartstore.naver.com/maryenb/products/11912105202",
+    "storeUrl": null,
     "imageUrl": "/images/product/amazon_tna5_30ml_08.png",
-    "galleryUrls": ["/images/product/amazon_tna5_30ml_08.png", "/images/product/amazon_tna5_30ml_01.png"],
-    "stock": 0,
+    "galleryUrls": [
+      "/images/product/amazon_tna5_30ml_08.png",
+      "/images/product/amazon_tna5_30ml_01.png"
+    ],
+    "stock": 100,
     "isFeatured": false,
     "isActive": true,
     "koreaSalesNote": null
@@ -105,10 +120,13 @@
     "volume": "30ml / 1.0 fl oz",
     "price": 15360,
     "compareAtPrice": 18080,
-    "storeUrl": "https://smartstore.naver.com/maryenb/products/11905682247",
+    "storeUrl": null,
     "imageUrl": "/images/product/amazon_NTZ20_30ml_01.png",
-    "galleryUrls": ["/images/product/amazon_NTZ20_30ml_01.png", "/images/product/amazon_NTZ20_30ml_02.png"],
-    "stock": 0,
+    "galleryUrls": [
+      "/images/product/amazon_NTZ20_30ml_01.png",
+      "/images/product/amazon_NTZ20_30ml_02.png"
+    ],
+    "stock": 100,
     "isFeatured": false,
     "isActive": true,
     "koreaSalesNote": null
