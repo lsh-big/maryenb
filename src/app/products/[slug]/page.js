@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ProductPage({ params }) {
   const { slug } = await params;
-  let product = catalog.find((item) => item.slug === slug);
+  const catalogProduct = catalog.find((item) => item.slug === slug);
+  let product = catalogProduct && { ...catalogProduct, purchaseUnavailable: true, price: null };
 
   if (isVirtualDatabase()) {
     product = (await getVirtualProducts()).find((item) => item.slug === slug && item.isActive);
@@ -21,20 +22,7 @@ export default async function ProductPage({ params }) {
       const databaseProduct = await prisma.product.findUnique({
         where: { slug, isActive: true },
       });
-      const catalogProduct = catalog.find((item) => item.slug === slug);
-      product = databaseProduct
-        ? {
-            ...databaseProduct,
-            ...(catalogProduct
-              ? {
-                  price: databaseProduct.price,
-                  compareAtPrice: catalogProduct.compareAtPrice,
-                  storeUrl: catalogProduct.storeUrl,
-                  koreaSalesNote: catalogProduct.koreaSalesNote,
-                }
-              : {}),
-          }
-        : product;
+      product = databaseProduct;
     } catch (error) {
       console.error("제품 정보를 불러오지 못했습니다.", error);
     }

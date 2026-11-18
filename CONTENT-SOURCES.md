@@ -23,3 +23,17 @@ NTZ20의 기존 라벨 자료는 Zinc 2%로 기록되어 있으나 공식 설명
 제품 특징은 `src/data/product-guides.js`에서 관리하며 `serializeProduct`가 최신 내용을 결합합니다. 이미 저장된 가상 재고·가격·주문에 설명이 덮어씌워져 재고가 초기화되는 일을 피합니다. 시연 판매가는 운영자 요청에 따라 기존 설정을 유지하며 공식 판매가나 실측 사용감·임상 결과로 표현하지 않습니다.
 
 RNT의 사용감은 확인된 설명이 없어 임의로 만들지 않았습니다. 저녁 전용, 주 2~3일 시작 및 임신·수유·임신 계획 시 주의사항을 별도로 표시했습니다. 고함량의 우월성, 제품 조합의 안전성, 효능 보장, 임의 후기·평점은 추가하지 않았습니다.
+
+
+## 한 병 루틴
+
+`productGuides`의 `concerns` 첫 값은 공식 설명에서 우선 다루는 고민으로, 전체 고민 필터는 같은 배열의 값을 모두 사용합니다. 한 병 루틴은 우선 고민이 맞는 후보를 최대 두 병 보여줍니다. NTZ20은 공식 안내에서 고함량과 적은 횟수로 시작하는 점을 강조하므로 편집 기준으로 액티브 사용 경험이 있는 방문자에게만 후보로 표시합니다. 두 답변으로 후보를 좁히기 어려우면 전체 비교로 이동할 수 있습니다. 이 기준은 피부 적합성 판정이나 제품 농도 순위가 아닙니다.
+
+2026-11-18 공식 30ml 제품 페이지의 6종 전성분을 확인했습니다. `productGuides`의 `ingredientsSource`를 통해 각 원문을 확인할 수 있습니다. 상세에 공식 웹 전성분과 제공 라벨의 주요 성분·함량을 표시하며, 실판매 전 출고 제품 포장의 최신 표기와 대조해야 합니다.
+
+- [VNC15 30ml](https://maryenb.com/products/vitamin-c-15-serum-1-fl-oz-vnc15)
+- [ANC5 30ml](https://maryenb.com/products/azelaic-acid-5-serum-1-fl-oz-anc5)
+- [ANC10 30ml](https://maryenb.com/products/azelaic-acid-10-serum-1-fl-oz-anc10)
+- [RNT 30ml](https://maryenb.com/products/retinol-5000-iu-serum-1-fl-oz-rnt)
+- [TNA5 30ml](https://maryenb.com/products/tranexamic-acid-5-serum-1-fl-oz-tna5)
+- [NTZ20 30ml](https://maryenb.co.kr/products/niacinamide-20-serum-1-fl-oz-ntz20)

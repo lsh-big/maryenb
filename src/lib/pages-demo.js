@@ -32,6 +32,8 @@ export async function demoRequest(path, options = {}) {
       if (body.action === "logout") { sessionStorage.removeItem(SESSION); return json({ user: null }); }
       let account;
       if (body.action === "guest") {
+        const existing = user();
+        if (existing) return json({ user: existing });
         account = { id: `guest-${crypto.randomUUID()}`, name: "게스트", email: "", guest: true };
       } else {
         if (!["signup", "login"].includes(body.action)) throw new Error("잘못된 요청입니다.");
@@ -51,16 +53,19 @@ export async function demoRequest(path, options = {}) {
       sessionStorage.setItem(SESSION, JSON.stringify(account));
       return json({ user: account });
     }
-    if (path === "/api/products") return json(database.products);
+    if (path === "/api/products") return json(database.products.filter((product) => product.isActive));
     if (path === "/api/checkout" && (!options.method || options.method === "GET")) return json({ virtual: true, browserLocal: true, methods, shippingFee: 0 });
     if (path === "/api/checkout") {
       const currentUser = user();
       if (!currentUser) return json({ error: "로그인 또는 게스트 입장 후 주문해 주세요." }, 401);
       if (!methods.some((m) => m.id === body.method) || !body.consent || !Array.isArray(body.items) || !body.items.length || body.items.length > 30) throw new Error("주문 정보를 확인해 주세요.");
+      for (const key of ["name", "email", "phone", "postalCode", "address"]) {
+        if (typeof body.customer?.[key] !== "string" || !body.customer[key].trim() || body.customer[key].length > 200) throw new Error("배송 정보를 확인해 주세요.");
+      }
       const seen = new Set();
       const lines = body.items.map((item) => {
         const product = database.products.find((p) => p.slug === item.slug && p.isActive);
-        if (!product || seen.has(item.slug) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99 || product.stock < item.quantity) throw new Error("상품 수량 또는 재고를 확인해 주세요.");
+        if (!product || !(product.price > 0) || product.koreaSalesNote || seen.has(item.slug) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99 || product.stock < item.quantity) throw new Error("상품 수량 또는 재고를 확인해 주세요.");
         seen.add(item.slug);
         return { slug: product.slug, name: product.name, price: product.price, quantity: item.quantity };
       });

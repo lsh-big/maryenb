@@ -1,111 +1,134 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "./auth-provider";
+import { apiFetch } from "../lib/client-api";
 
 const CartContext = createContext(null);
+const storageKey = `maryenb-carts-v2:${process.env.NEXT_PUBLIC_BASE_PATH || "/"}`;
+const guest = "guest";
 
-export function CartProvider({ children }) {
-  const { user } = useAuth();
-  return <CartStore key={user?.id || "signed-out"} user={user}>{children}</CartStore>;
+function readCarts(account, legacyId) {
+  const saved = localStorage.getItem(storageKey);
+  const carts = saved ? JSON.parse(saved) : {};
+  if (legacyId && !Object.hasOwn(carts, account)) {
+    const legacy = JSON.parse(localStorage.getItem(`maryenb-cart:${legacyId}`) || "[]");
+    carts[account] = Array.isArray(legacy) ? legacy : [];
+  }
+  return carts;
 }
 
-function CartStore({ children, user }) {
-  const router = useRouter();
-  const STORAGE_KEY = `maryenb-cart:${user?.id || "signed-out"}`;
-  const [items, setItems] = useState([]);
+function mergeItems(accountItems, guestItems) {
+  const merged = new Map(accountItems.map((item) => [item.slug, item]));
+  for (const item of guestItems) {
+    const previous = merged.get(item.slug);
+    merged.set(item.slug, { ...item, quantity: Math.min(99, item.quantity + (previous?.quantity || 0)) });
+  }
+  return [...merged.values()];
+}
+
+export function CartProvider({ children }) {
+  const { user, loading } = useAuth();
+  const account = user && !user.guest ? user.id : guest;
+  return <CartStore key={account} account={account} legacyId={user?.id} loading={loading}>{children}</CartStore>;
+}
+
+function CartStore({ children, account, legacyId, loading }) {
+  const pathname = usePathname();
+  const latest = useRef([]);
+  const [savedItems, setSavedItems] = useState([]);
   const [ready, setReady] = useState(false);
+  const [inventory, setInventory] = useState(null);
 
   useEffect(() => {
-    if (!user) { setReady(true); return; }
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setItems(parsed);
+    if (loading) return;
+    function load() {
+      try {
+        const carts = readCarts(account, legacyId);
+        if (account !== guest && carts[guest]?.length) {
+          carts[account] = mergeItems(carts[account] || [], carts[guest]);
+          carts[guest] = [];
+        }
+        localStorage.setItem(storageKey, JSON.stringify(carts));
+        latest.current = carts[account] || [];
+        setSavedItems(latest.current);
+      } catch {
+        setSavedItems(latest.current);
       }
-    } catch (error) {
-      console.error("장바구니 정보를 불러오지 못했습니다.", error);
-    } finally {
       setReady(true);
     }
-  }, [STORAGE_KEY, user]);
+    function sync(event) {
+      if (event.key !== storageKey) return;
+      try {
+        latest.current = readCarts(account, legacyId)[account] || [];
+        setSavedItems(latest.current);
+      } catch {
+        // Keep the current cart if browser storage is unavailable.
+      }
+    }
+    load();
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, [account, legacyId, loading]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!["/cart", "/checkout"].includes(pathname.replace(/\/$/, ""))) return;
+    let active = true;
+    apiFetch("/api/products", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((products) => { if (active) setInventory(products); })
+      .catch(() => {});
+    return () => { active = false; setInventory(null); };
+  }, [pathname]);
+
+  const items = inventory ? savedItems.map((item) => {
+    const product = inventory.find((product) => product.slug === item.slug);
+    return { ...item, price: product?.price ?? null, stock: product?.stock ?? 0, unavailable: !product || Boolean(product.koreaSalesNote) };
+  }) : savedItems;
+
+  function save(next) {
+    latest.current = next;
+    setSavedItems(next);
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch (error) {
-      console.error("장바구니 정보를 저장하지 못했습니다.", error);
+      const carts = readCarts(account, legacyId);
+      localStorage.setItem(storageKey, JSON.stringify({ ...carts, [account]: next }));
+    } catch {
+      // Shopping can continue in memory when the browser blocks storage.
     }
-  }, [items, ready, STORAGE_KEY, user]);
+  }
 
-  const value = useMemo(() => {
-    const addItem = (product, quantity = 1) => {
-      if (!user) {
-        router.push(`/login?next=${encodeURIComponent(`/products/${product.slug}`)}`);
-        return false;
-      }
-      if (product.price === null || product.stock < 1 || !Number.isInteger(quantity) || quantity < 1) return false;
-      const existing = items.find((item) => item.id === product.id);
-      if ((existing?.quantity || 0) + quantity > Math.min(product.stock, 99)) return false;
-      setItems((current) => {
-        const found = current.find((item) => item.id === product.id);
-        if (found) {
-          return current.map((item) =>
-            item.id === product.id
-              ? { ...item, price: product.price, stock: product.stock, quantity: Math.min(item.quantity + quantity, product.stock, 99) }
-              : item,
-          );
-        }
-        return [
-          ...current,
-          {
-            id: product.id,
-            slug: product.slug,
-            name: product.name,
-            price: product.price,
-            imageUrl: product.imageUrl,
-            stock: product.stock,
-            quantity,
-          },
-        ];
-      });
-      return true;
-    };
+  function addItem(product, quantity = 1) {
+    if (!ready || !Number.isFinite(product.price) || product.price <= 0 || product.koreaSalesNote || !Number.isInteger(quantity) || quantity < 1) return false;
+    const current = latest.current;
+    const existing = current.find((item) => item.slug === product.slug);
+    const total = (existing?.quantity || 0) + quantity;
+    if (total > Math.min(product.stock, 99)) return false;
+    const line = { id: product.id, slug: product.slug, name: product.name, imageUrl: product.imageUrl, price: product.price, stock: product.stock, quantity: total };
+    save(existing ? current.map((item) => item.slug === product.slug ? line : item) : [...current, line]);
+    return true;
+  }
 
-    const updateQuantity = (id, quantity) => {
-      setItems((current) =>
-        !Number.isInteger(quantity) || quantity < 1
-          ? current.filter((item) => item.id !== id)
-          : current.map((item) =>
-              item.id === id ? { ...item, quantity: Math.min(quantity, item.stock ?? 99, 99) } : item,
-            ),
-      );
-    };
+  function updateQuantity(id, quantity) {
+    const line = items.find((item) => item.id === id);
+    if (!line || !Number.isInteger(quantity) || quantity < 1 || quantity > Math.min(line.stock ?? 99, 99)) return;
+    save(latest.current.map((item) => item.id === id ? { ...item, quantity } : item));
+  }
 
-    return {
-      items,
-      clearCart: () => setItems([]),
-      addItem,
-      updateQuantity,
-      removeItem: (id) =>
-        setItems((current) => current.filter((item) => item.id !== id)),
-      itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-      subtotal: items.some((item) => item.price === null)
-        ? null
-        : items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    };
-  }, [items, user, router]);
+  const value = {
+    items, ready, addItem, updateQuantity,
+    clearCart: () => save([]),
+    removeItem: (id) => save(latest.current.filter((item) => item.id !== id)),
+    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    subtotal: items.some((item) => item.price == null) ? null : items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    hasUnavailable: items.some((item) => item.unavailable || !(item.price > 0) || item.quantity > item.stock),
+  };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
   const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart은 CartProvider 안에서 사용해야 합니다.");
-  }
+  if (!context) throw new Error("useCart은 CartProvider 안에서 사용해야 합니다.");
   return context;
 }

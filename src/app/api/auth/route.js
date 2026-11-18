@@ -18,6 +18,10 @@ export async function POST(request) {
       return response;
     }
     if (action === "guest" && !isVirtualDatabase()) throw new Error("게스트 모드는 시연 환경에서만 사용할 수 있습니다.");
+    if (action === "guest") {
+      const existing = await getUser();
+      if (existing) return NextResponse.json({ user: existing });
+    }
     const session = await authenticate(action, input);
     const response = NextResponse.json({ user: session.user });
     response.cookies.set("maryenb-session", session.token, { httpOnly: true, sameSite: "lax", secure: new URL(request.url).protocol === "https:", path: "/", maxAge: session.maxAge });

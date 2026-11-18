@@ -23,9 +23,6 @@ await rm(path.join(stage, "src/app/api"), { recursive: true, force: true });
 await writeFile(path.join(stage, "next.config.js"), `module.exports = { output: "export", trailingSlash: true, basePath: ${JSON.stringify(base)}, images: { unoptimized: true } };\n`);
 await writeFile(path.join(stage, "src/lib/database-mode.js"), "export function isVirtualDatabase() { return true; }\n");
 await writeFile(path.join(stage, "src/lib/virtual-db.js"), 'import catalog from "../data/products.json";\nexport async function getVirtualProducts() { return catalog.map(p => ({ ...p, id: p.slug })); }\n');
-for (const route of ["cart", "checkout"]) {
-  await writeFile(path.join(stage, `src/app/${route}/layout.js`), `import { ProtectedPage } from "../../components/protected-page";\nexport default function Layout({ children }) { return <ProtectedPage next="/${route}">{children}</ProtectedPage>; }\n`);
-}
 async function prepare(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const filename = path.join(directory, entry.name);

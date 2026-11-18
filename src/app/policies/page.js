@@ -34,6 +34,15 @@ export default function PoliciesPage() {
         <p>이 사이트에서 상품을 장바구니에 담고 주문서를 작성할 수 있습니다. 결제·배송·교환·반품 조건은 판매 서비스 활성화 전에 확정하여 안내합니다.</p>
       </section>
 
+      <section className="policy-section" id="delivery">
+        <h2>배송·교환·반품 안내</h2>
+        <dl className="routine-facts">
+          <div><dt>배송비</dt><dd>주문 금액 요약에서 확인할 수 있습니다. 가상 주문의 배송비는 0원입니다.</dd></div>
+          <div><dt>발송 기준</dt><dd>가상 주문은 발송되지 않습니다. 실제 판매의 발송 일정은 확정 후 안내합니다.</dd></div>
+          <div><dt>반품 접수</dt><dd>실제 판매의 교환·반품 접수 방법과 비용은 확정 후 안내합니다.</dd></div>
+        </dl>
+      </section>
+
       <section className="policy-section">
         <h2>개인정보 안내</h2>
         <p>
@@ -48,7 +57,7 @@ export default function PoliciesPage() {
         <h2>제품 정보와 표현 기준</h2>
         <ul>
           <li>제품명, 성분명, 함량과 용량은 제공 자료의 제품 라벨에 표시된 사실을 따릅니다.</li>
-          <li>판매가는 상품 상세와 주문서에서 확인할 수 있습니다. ANC5는 15,700원, ANC10은 16,900원으로 설정했습니다.</li>
+          <li>현재 판매가는 상품 상세와 주문서에서 확인할 수 있습니다.</li>
           <li>제품 사진과 라벨은 원본 그대로 사용하며 제품 병이나 표시 내용을 편집하지 않습니다.</li>
           <li>제품의 성능을 보장하거나 확인되지 않은 사용 경험을 만들어 안내하지 않습니다.</li>
           <li>

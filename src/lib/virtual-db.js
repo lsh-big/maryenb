@@ -25,7 +25,7 @@ export async function createVirtualOrder(items, method, userId) {
     const database = await read();
     const lines = items.map((item) => {
       const product = database.products.find((p) => p.slug === item.slug && p.isActive);
-      if (!product || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99 || product.stock < item.quantity) throw new Error("상품 재고 또는 수량을 확인해 주세요.");
+      if (!product || product.koreaSalesNote || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99 || product.stock < item.quantity) throw new Error("상품 재고 또는 수량을 확인해 주세요.");
       if (!Number.isFinite(product.price) || product.price <= 0) throw new Error("판매가를 확인해 주세요.");
       return { slug: product.slug, name: product.name, quantity: item.quantity, price: product.price };
     });

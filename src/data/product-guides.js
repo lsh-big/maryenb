@@ -10,6 +10,8 @@ export const concerns = [
 
 export const productGuides = {
   VNC15: {
+    ingredientsSource: "https://maryenb.com/products/vitamin-c-15-serum-1-fl-oz-vnc15",
+    fullIngredients: "정제수, 프로판다이올, 아스코빅애씨드, 1,2-헥산다이올, 알부틴, 나이아신아마이드, 부틸렌글라이콜, 소듐하이드록사이드, 다이소듐이디티에이, 하이드록시에틸셀룰로오스, 에틸헥실글리세린, 병풀추출물, 녹차잎추출물, 약모밀추출물, 귀리추출물, 참깨추출물",
     headline: "칙칙한 날, 비타민C 루틴",
     summary: "칙칙해 보이는 피부와 고르지 않은 피부톤이 고민일 때 살펴보세요. 아스코빅애씨드 형태의 비타민C 15%에 알부틴과 나이아신아마이드를 더했습니다.",
     concerns: ["tone"], tags: ["칙칙함", "피부톤", "비타민C 15%"], accent: "#a94b40", wash: "#fff0e9",
@@ -21,6 +23,8 @@ export const productGuides = {
     source: "https://maryenb.co.kr/pages/vitamin-c-guide",
   },
   ANC5: {
+    ingredientsSource: "https://maryenb.com/products/azelaic-acid-5-serum-1-fl-oz-anc5",
+    fullIngredients: "정제수, 프로필렌글라이콜, 아젤라익애씨드, 프로판다이올, 트로메타민, 1,2-헥산다이올, 폴리솔베이트20, 나이아신아마이드, 부틸렌글라이콜, 소듐하이알루로네이트, 병풀추출물, 판테놀, 녹차잎추출물, 약모밀추출물, 귀리추출물, 참깨추출물",
     headline: "붉은기와 피부결을 살피는 5%",
     summary: "붉은기, 고르지 않아 보이는 피부톤과 피부결이 신경 쓰일 때 비교해 볼 아젤라익애씨드 세럼입니다. 5% 배합에 나이아신아마이드와 병풀 추출물을 함께 담았습니다.",
     concerns: ["redness", "tone"], tags: ["붉은기", "피부결", "아젤라익 5%"], accent: "#ad5077", wash: "#fff0f6",
@@ -33,6 +37,8 @@ export const productGuides = {
     source: "https://maryenb.co.kr/pages/azelaic-acid-guide",
   },
   ANC10: {
+    ingredientsSource: "https://maryenb.com/products/azelaic-acid-10-serum-1-fl-oz-anc10",
+    fullIngredients: "정제수, 프로필렌글라이콜, 아젤라익애씨드, 트로메타민, 프로판다이올, 1,2-헥산다이올, 폴리솔베이트20, 나이아신아마이드, 부틸렌글라이콜, 소듐하이알루로네이트, 병풀추출물, 판테놀, 녹차잎추출물, 약모밀추출물, 귀리추출물, 참깨추출물",
     headline: "배합을 비교해 고르는 10%",
     summary: "아젤라익애씨드 10%를 중심으로 붉은기와 고르지 않은 피부톤·피부결 고민을 살펴보는 세럼입니다. 함량뿐 아니라 기존 루틴과 사용법을 함께 비교해 보세요.",
     concerns: ["redness", "tone"], tags: ["붉은기", "피부톤", "아젤라익 10%"], accent: "#9c3b67", wash: "#faeaf2",
@@ -45,21 +51,25 @@ export const productGuides = {
     source: "https://maryenb.co.kr/pages/azelaic-acid-guide",
   },
   RNT: {
+    ingredientsSource: "https://maryenb.com/products/retinol-5000-iu-serum-1-fl-oz-rnt",
+    fullIngredients: "정제수, 프로판다이올, 폴리솔베이트20, 1,2-헥산다이올, 나이아신아마이드, 트라넥사믹애씨드, 소듐하이알루로네이트, 레티놀, 다이소듐이디티에이, 토코페릴아세테이트, 에틸헥실글리세린, BHT, BHA",
     headline: "저녁에 시작하는 피부결 루틴",
     summary: "잔주름과 거칠어 보이는 피부결이 고민일 때 살펴볼 저녁용 세럼입니다. 레티놀 5000 IU/g에 나이아신아마이드와 트라넥사믹애씨드를 함께 배합했습니다.",
     concerns: ["texture"], tags: ["잔주름", "피부결", "저녁 전용"], accent: "#81518c", wash: "#f5edf9",
     focus: "레티놀 5000 IU/g", texture: "공식 사용감 설명 없음", timing: "저녁에만", frequency: "주 2~3일 밤부터",
     points: [["5000", "레티놀 · IU/g"], ["1%", "나이아신아마이드"], ["1%", "트라넥사믹애씨드"]],
     tip: "저녁에 소량으로 시작하고 보습제로 마무리하세요. 다음 날 아침을 포함해 매일 자외선 차단제를 사용하세요.",
-    caution: "임신·수유 중이거나 임신을 계획 중이라면 전문가와 상의하기 전에는 사용하지 마세요. 아침에는 사용하지 않으며, 5000 IU/g을 임의의 퍼센트로 환산하지 않습니다.",
+    caution: "임신·수유 중이거나 임신을 계획 중이라면 사용하지 마세요. 아침에는 사용하지 않으며, 5000 IU/g을 임의의 퍼센트로 환산하지 않습니다.",
     faq: ["처음부터 매일 밤 사용해도 되나요?", "공식 시작 안내는 주 2~3일 저녁입니다. 피부가 편안한지 먼저 확인하고, 따갑거나 붉어지면 횟수를 늘리지 말고 사용을 멈추세요."],
     source: "https://maryenb.co.kr/pages/retinol-guide",
   },
   TNA5: {
+    ingredientsSource: "https://maryenb.com/products/tranexamic-acid-5-serum-1-fl-oz-tna5",
+    fullIngredients: "정제수, 트라넥사믹애씨드, 글리세레스-26, 베타인, 나이아신아마이드, 1,2-헥산다이올, 프로판다이올, 알부틴, 소듐하이알루로네이트, 잔탄검, 알란토인, 에틸헥실글리세린, 시트릭애씨드, 알로에베라잎추출물, 부틸렌글라이콜, 말토덱스트린, 녹차잎추출물, 약모밀추출물, 귀리추출물, 참깨추출물",
     headline: "고르지 않은 톤을 위한 한 병",
     summary: "잡티와 칙칙해 보이는 피부톤이 신경 쓰일 때 살펴보세요. 트라넥사믹애씨드 5%와 나이아신아마이드 3%, 알부틴 2%의 조합이 특징입니다.",
     concerns: ["tone"], tags: ["피부톤", "잡티 고민", "트라넥사믹 5%"], accent: "#527ba6", wash: "#edf5fd",
-    focus: "트라넥사믹애씨드 5%", texture: "가벼운 수분 베이스", timing: "제품 라벨에 따라", frequency: "하루 1회부터",
+    focus: "트라넥사믹애씨드 5%", texture: "가벼운 수분 베이스", timing: "아침 또는 저녁", frequency: "하루 1회부터",
     points: [["5%", "트라넥사믹애씨드"], ["3%", "나이아신아마이드"], ["2%", "알부틴"]],
     tip: "새 세럼은 이 제품 하나부터 시작하고 익숙한 보습제와 함께 사용하세요. 낮에는 자외선 차단제를 챙기세요.",
     caution: "NTZ20·RNT와 겹치는 성분이 있지만 세 제품을 함께 써야 한다는 뜻은 아닙니다. 서로 다른 병의 함량을 더해 계산하지 마세요.",
@@ -67,8 +77,11 @@ export const productGuides = {
     source: "https://maryenb.co.kr/pages/tranexamic-acid-guide",
   },
   NTZ20: {
+    ingredientsSource: "https://maryenb.co.kr/products/niacinamide-20-serum-1-fl-oz-ntz20",
+    fullIngredients: "정제수, 나이아신아마이드, 프로판다이올, 글리세린, 1,2-헥산다이올, 징크피씨에이, 트라넥사믹애씨드, 알로에베라잎추출물, 하이드록시에틸셀룰로오스, 알란토인, 에틸헥실글리세린, 카페인, 부틸렌글라이콜, 말토덱스트린, 알부틴, 소듐하이알루로네이트, 녹차잎추출물, 약모밀추출물, 귀리추출물, 참깨추출물",
     headline: "유분·모공 고민에 산뜻한 루틴",
     summary: "번들거림과 눈에 띄는 모공이 신경 쓰일 때 살펴볼 세럼입니다. 나이아신아마이드 20%에 징크 PCA 2%, 트라넥사믹애씨드 2%를 더한 배합입니다.",
+    limitRoutineToExperienced: true,
     concerns: ["oil", "tone"], tags: ["번들거림", "모공 고민", "나이아신 20%"], accent: "#388982", wash: "#eaf7f4",
     focus: "나이아신아마이드 20%", texture: "가벼운 수분 베이스", timing: "제품 라벨에 따라", frequency: "하루 1회 또는 주 2~3회부터",
     points: [["20%", "나이아신아마이드"], ["2%", "징크 PCA"], ["2%", "트라넥사믹애씨드"]],
@@ -78,3 +91,12 @@ export const productGuides = {
     source: "https://maryenb.co.kr/products/niacinamide-20-serum-1-fl-oz-ntz20",
   },
 };
+
+// The first concern is the guide?s primary use case. Secondary concerns remain
+// available in the catalog filter without displacing primary routine candidates.
+export function getRoutineCandidates(products, concern, experience) {
+  if (!concern || !experience) return [];
+  return products
+    .filter(({ guide }) => guide.concerns[0] === concern && (!guide.limitRoutineToExperienced || experience === "used"))
+    .slice(0, 2);
+}

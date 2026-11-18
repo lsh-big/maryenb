@@ -25,7 +25,7 @@ export default function LoginPage() {
     } catch (e) { setError(e.message); setBusy(false); }
   }
 
-  return <section className="auth-shell"><p className="eyebrow">WELCOME TO YOUR DAILY RITUAL</p><h1>{signup ? "마리엔비와 함께해요" : "다시 만나 반가워요"}</h1><p className="auth-description">장바구니와 구매는 로그인 후 이용할 수 있어요.<br />시연은 회원가입 없이 게스트로 시작할 수 있습니다.</p>
+  return <section className="auth-shell"><p className="eyebrow">WELCOME TO YOUR DAILY RITUAL</p><h1>{signup ? "마리엔비와 함께해요" : "다시 만나 반가워요"}</h1><p className="auth-description">장바구니와 가상 주문은 회원가입 없이 이용할 수 있어요.</p>
     <div className="auth-tabs"><button type="button" aria-pressed={!signup} onClick={() => { setSignup(false); setError(""); }}>로그인</button><button type="button" aria-pressed={signup} onClick={() => { setSignup(true); setError(""); }}>회원가입</button></div>
     {error && <p className="payment-alert" role="alert">{error}</p>}
     <form className="auth-form" onSubmit={(event) => submit(event, signup ? "signup" : "login")}>
