@@ -39,6 +39,7 @@ model Product {
   isFeatured    Boolean     @default(false)
   isActive      Boolean     @default(true)
   orderItems    OrderItem[]
+  reviews       ProductReview[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -70,6 +71,7 @@ model Order {
   shippingFee     Decimal     @default(0) @db.Decimal(10, 0)
   total           Decimal     @db.Decimal(10, 0)
   items           OrderItem[]
+  reviews         ProductReview[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -107,4 +109,29 @@ model OrderItem {
   product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
+}
+
+model ProductReview {
+  id        String   @id @default(uuid())
+  productId Int
+  orderId   Int
+  ownerId   String
+  rating    Int
+  body      String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photo     ReviewPhoto?
+
+  @@unique([productId, ownerId])
+  @@index([productId, createdAt, id])
+  @@index([orderId])
+}
+
+model ReviewPhoto {
+  reviewId String @id
+  image    Bytes
+  width    Int
+  height   Int
+  review   ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }

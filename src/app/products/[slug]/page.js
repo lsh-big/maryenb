@@ -30,5 +30,6 @@ export default async function ProductPage({ params }) {
 
   if (!product) notFound();
 
-  return <ProductDetail product={serializeProduct(product)} virtual={virtual} shippingFee={configuredShippingFee()} />;
+  return <ProductDetail product={serializeProduct(product)} virtual={virtual} shippingFee={configuredShippingFee()}
+    reviewsEnabled={!virtual && Number.isInteger(product.id)} />;
 }

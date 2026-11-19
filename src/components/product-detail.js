@@ -10,12 +10,14 @@ import { ProductArt } from "./product-art";
 import { QuantitySelector } from "./quantity-selector";
 import { apiFetch } from "../lib/client-api";
 import { ProductAdvantage } from "./product-advantage";
+import { ProductReviews } from "./product-reviews";
+import { SkinComparison } from "./skin-comparison";
 import { productGuides } from "../data/product-guides";
 import catalog from "../data/products.json";
 
 const azelaicPair = catalog.filter(({ code }) => code === "ANC5" || code === "ANC10");
 
-export function ProductDetail({ product: initialProduct, shippingFee, virtual }) {
+export function ProductDetail({ product: initialProduct, shippingFee, virtual, reviewsEnabled }) {
   const [localProduct, setLocalProduct] = useState(null);
   const product = { ...initialProduct, ...localProduct };
   useEffect(() => {
@@ -153,6 +155,7 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual })
           <p>{guide.tip}</p><p>{guide.caution}</p>
           <a className="text-link" href={guide.source} target="_blank" rel="noreferrer">공식 사용 안내</a>
         </section>}
+        <SkinComparison key={product.code} code={product.code} />
         <section className="product-faq detail-chapter">
           <h2>전성분·배송·교환·반품</h2>
           <details>
@@ -169,10 +172,11 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual })
           <details id="detail-delivery">
             <summary>배송·교환·반품</summary>
             <p>{virtual ? "가상 주문의 배송비는 0원입니다." : "배송·교환·반품 조건은 판매 안내에서 확인할 수 있습니다."}</p>
-            <Link className="text-link" href="/policies#delivery">발송·반품 안내 확인</Link>
+            <Link className="text-link" href="/support#order-delivery">고객지원 배송·교환 안내</Link>
           </details>
         </section>
       </div>
+      <ProductReviews key={product.slug} slug={product.slug} enabled={reviewsEnabled} />
       <div className="detail-guide-navigation"><Link className="text-link" href="/#compare">6종 성분·사용법 비교하기 →</Link><Link className="text-link" href="/#routine">처음 시작하는 루틴 보기 →</Link></div>
       <div className="mobile-buy">
         <div><span>{product.price == null ? "판매가 확인 중" : `${selectedQuantity}개 상품 금액`}</span><strong>{product.price == null ? "가격 미정" : `${formatPrice(product.price * selectedQuantity)}원`}</strong></div>

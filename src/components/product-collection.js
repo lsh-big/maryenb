@@ -8,19 +8,24 @@ import { ProductCard } from "./product-card";
 import { apiFetch } from "../lib/client-api";
 import { formatPrice } from "../lib/products";
 
-const routineStorageKey = "maryenb-one-bottle-answers";
+const emptyAnswers = { concern: "", experience: "" };
 const routineConcerns = [...concerns.slice(1), { id: "unsure", label: "아직 모르겠어요" }];
 
 const experiences = [
   { id: "new", label: "처음이거나 오랜만이에요" },
   { id: "used", label: "사용해 본 적 있어요" },
 ];
+const comparisonTabs = [
+  { id: "all", label: "6종 비교" },
+  { id: "niacinamide", label: "나이아신아마이드" },
+];
+const niacinamideLevels = ["1%", "3%", "20%"];
 
 function Options({ name, label, options, onChange, selection }) {
   return <fieldset className="routine-options">
     <legend>{label}</legend>
     <div>{options.map(({ id, label }) => (
-      <label key={id}><input type="radio" name={name} value={id} checked={selection === id} onChange={() => onChange(id)} />{label}</label>
+      <label key={id}><input type="radio" name={name} value={id} autoComplete="off" checked={selection === id} onChange={() => onChange(id)} />{label}</label>
     ))}</div>
   </fieldset>;
 }
@@ -52,29 +57,29 @@ function SerumFacts({ product, candidate = false, sharedRoutine = false }) {
 
 export function ProductCollection({ products }) {
   const [filter, setFilter] = useState("all");
-  const [answers, setAnswers] = useState({ concern: "", experience: "" });
+  const [comparisonTab, setComparisonTab] = useState("all");
+  const [niacinamideLevel, setNiacinamideLevel] = useState("1%");
+  const [answers, setAnswers] = useState(emptyAnswers);
   const { concern, experience } = answers;
 
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(routineStorageKey) || "{}");
-      setAnswers({
-        concern: routineConcerns.some(({ id }) => id === saved?.concern) ? saved.concern : "",
-        experience: experiences.some(({ id }) => id === saved?.experience) ? saved.experience : "",
-      });
-    } catch {
-      // Answers can still be selected when browser storage is unavailable.
-    }
-  }, []);
-
   function updateAnswer(key, value) {
-    const next = { ...answers, [key]: value };
-    setAnswers(next);
-    try {
-      sessionStorage.setItem(routineStorageKey, JSON.stringify(next));
-    } catch {
-      // Keep the current answers in memory.
-    }
+    setAnswers((current) => ({ ...current, [key]: value }));
+  }
+
+  function moveComparisonTab(event) {
+    const index = comparisonTabs.findIndex(({ id }) => id === comparisonTab);
+    const last = comparisonTabs.length - 1;
+    const nextIndex = {
+      ArrowLeft: (index + last) % comparisonTabs.length,
+      ArrowRight: (index + 1) % comparisonTabs.length,
+      Home: 0,
+      End: last,
+    }[event.key];
+    if (nextIndex === undefined) return;
+    event.preventDefault();
+    const next = comparisonTabs[nextIndex].id;
+    setComparisonTab(next);
+    event.currentTarget.querySelector(`#compare-tab-${next}`)?.focus();
   }
   const [inventory, setInventory] = useState(null);
 
@@ -98,6 +103,9 @@ export function ProductCollection({ products }) {
   const sharedRoutine = hasAncPair && ancPair[0].guide.timing === ancPair[1].guide.timing
     && ancPair[0].guide.frequency === ancPair[1].guide.frequency;
   const otherProducts = hasAncPair ? comparison.filter((product) => !ancPair.includes(product)) : comparison;
+  const matchingNiacinamide = guided.filter(({ guide }) => guide.points.some(
+    ([amount, ingredient]) => ingredient === "나이아신아마이드" && amount === niacinamideLevel,
+  ));
 
   return <>
     <section className="one-bottle" id="one-bottle" tabIndex={-1} aria-labelledby="one-bottle-title">
@@ -105,6 +113,7 @@ export function ProductCollection({ products }) {
       <p>고민과 사용 경험을 선택하면 공식 제품 안내에서 살펴볼 세럼을 보여드려요.</p>
       <Options name="routine-concern" label="가장 신경 쓰이는 피부 고민" options={routineConcerns} selection={concern} onChange={(value) => updateAnswer("concern", value)} />
       <Options name="routine-experience" label="액티브 세럼 사용 경험" options={experiences} selection={experience} onChange={(value) => updateAnswer("experience", value)} />
+      <button className="button routine-reset" type="button" onClick={() => setAnswers(emptyAnswers)}>초기화</button>
       <div className="routine-result-heading" aria-live="polite">
         {answered && (candidates.length
           ? <h3>{concernLabel} 고민에서 살펴볼 세럼 {candidates.length}종</h3>
@@ -123,15 +132,41 @@ export function ProductCollection({ products }) {
       <div className="product-grid">{filtered.map((p, index) => <ProductCard key={p.slug} product={p} index={index} />)}</div>
     </section>
 
-    <section className="serum-comparison" id="compare" tabIndex={-1}>
-      <h2>6종 성분·사용법 비교</h2>
-      {hasAncPair && <section className="anc-comparison" aria-labelledby="anc-comparison-title">
-        <h3 id="anc-comparison-title">ANC5와 ANC10 나란히 보기</h3>
-        {sharedRoutine && <p>공통 안내 · 사용 시간은 {ancPair[0].guide.timing}. 첫 사용은 {ancPair[0].guide.frequency} 시작하세요.</p>}
-        <div className="serum-facts-grid">{ancPair.map((p) => <SerumFacts key={p.slug} product={p} sharedRoutine={sharedRoutine} />)}</div>
-        <p className="guide-footnote">병풀 추출물 함량은 웹 안내와 제공 라벨이 달라 실제 포장의 최신 표시를 확인해 주세요.</p>
-      </section>}
-      <div className="serum-facts-grid">{otherProducts.map((p) => <SerumFacts key={p.slug} product={p} />)}</div>
+    <section className="serum-comparison" id="compare" tabIndex={-1} aria-labelledby="compare-title"
+      onFocus={(event) => { if (event.target === event.currentTarget) setComparisonTab("all"); }}>
+      <h2 id="compare-title">6종 성분·사용법 비교</h2>
+      <div className="concern-filters comparison-tabs" role="tablist" aria-label="세럼 비교 방식" onKeyDown={moveComparisonTab}>
+        {comparisonTabs.map(({ id, label }) => (
+          <button key={id} type="button" role="tab" id={`compare-tab-${id}`} aria-controls={`compare-panel-${id}`}
+            aria-selected={comparisonTab === id} tabIndex={comparisonTab === id ? 0 : -1}
+            onClick={() => setComparisonTab(id)}>{label}</button>
+        ))}
+      </div>
+      <div role="tabpanel" id="compare-panel-all" aria-labelledby="compare-tab-all" tabIndex={0} hidden={comparisonTab !== "all"}>
+        {hasAncPair && <section className="anc-comparison" aria-labelledby="anc-comparison-title">
+          <h3 id="anc-comparison-title">ANC5와 ANC10 나란히 보기</h3>
+          {sharedRoutine && <p>공통 안내 · 사용 시간은 {ancPair[0].guide.timing}. 첫 사용은 {ancPair[0].guide.frequency} 시작하세요.</p>}
+          <div className="serum-facts-grid">{ancPair.map((p) => <SerumFacts key={p.slug} product={p} sharedRoutine={sharedRoutine} />)}</div>
+          <p className="guide-footnote">병풀 추출물 함량은 웹 안내와 제공 라벨이 달라 실제 포장의 최신 표시를 확인해 주세요.</p>
+        </section>}
+        <div className="serum-facts-grid">{otherProducts.map((p) => <SerumFacts key={p.slug} product={p} />)}</div>
+      </div>
+      <div role="tabpanel" id="compare-panel-niacinamide" aria-labelledby="compare-tab-niacinamide"
+        tabIndex={0} hidden={comparisonTab !== "niacinamide"}>
+        <p className="comparison-intro">마리엔비 세럼 6종에 담긴 나이아신아마이드 함량을 비교해 보세요.</p>
+        <div className="concern-filters comparison-levels" role="group" aria-label="나이아신아마이드 함량">
+          {niacinamideLevels.map((level) => (
+            <button key={level} type="button" aria-pressed={niacinamideLevel === level}
+              onClick={() => setNiacinamideLevel(level)}>{level}</button>
+          ))}
+        </div>
+        <p className="comparison-count" role="status">나이아신아마이드 {niacinamideLevel} · {matchingNiacinamide.length}종</p>
+        <div className="product-grid comparison-product-grid">
+          {matchingNiacinamide.map((product) => (
+            <ProductCard key={product.slug} product={product} ingredientPrefix="주성분 · " detailLabel="제품 보기" />
+          ))}
+        </div>
+      </div>
     </section>
   </>;
 }

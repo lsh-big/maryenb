@@ -17,6 +17,8 @@ export function SiteHeader() {
           <Link href="/#products">세럼</Link>
           <Link href="/#brand">브랜드</Link>
           <Link className="nav-guide" href="/#one-bottle">한 병 루틴</Link>
+          <Link className="support-nav-link" href="/support">고객지원</Link>
+          <Link className="orders-link-mobile" href="/orders">주문조회</Link>
         </nav>
         <Link className="wordmark" href="/" aria-label="MaryenB 홈">
           <Image
@@ -29,6 +31,7 @@ export function SiteHeader() {
         </Link>
         <div className="header-account">
           {!loading && (user ? <div className="account-status"><span>{user.guest ? "게스트 체험 중" : `${user.name}님`}</span><button type="button" onClick={signOut}>로그아웃</button></div> : <Link className="login-link" href="/login">로그인 · 회원가입</Link>)}
+        <Link className="orders-link-desktop" href="/orders">주문·배송 조회</Link>
         <Link className="cart-link" href="/cart" aria-label={`장바구니 ${itemCount}개`}>
           <ShoppingBag size={19} strokeWidth={1.6} />
           <span>장바구니</span>

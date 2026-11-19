@@ -59,6 +59,11 @@ export default function PoliciesPage() {
       </section>
 
       <section className="policy-section">
+        <h2>구매 후기 공개 안내</h2>
+        <p>등록한 별점, 후기 본문, 첨부 사진과 작성일이 상품 페이지에 공개됩니다. 구매 회원으로 표시되며 계정 이름이나 주문번호는 후기에 표시되지 않습니다. 사진에는 사람의 얼굴, 배송 송장과 같은 개인정보가 보이지 않도록 확인해 주세요. 작성자는 상품 페이지에서 자신의 후기와 사진을 삭제할 수 있습니다.</p>
+      </section>
+
+      <section className="policy-section">
         <h2>제품 정보와 표현 기준</h2>
         <ul>
           <li>제품명, 성분명, 함량과 용량은 제공 자료의 제품 라벨에 표시된 사실을 따릅니다.</li>

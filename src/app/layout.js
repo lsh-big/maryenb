@@ -35,6 +35,7 @@ export default function RootLayout({ children }) {
                 <span>사업자등록번호 {seller.registrationNumber}</span>
               </div>
               <Link className="footer-policy-link" href="/orders">주문·배송 조회</Link>
+              <Link className="footer-policy-link" href="/support">고객지원</Link>
               <Link className="footer-policy-link" href="/policies">
                 판매자·이용·개인정보 안내
               </Link>

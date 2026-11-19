@@ -3,7 +3,6 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { ProductCollection } from "../components/product-collection";
 import { RoutineGuide } from "../components/routine-guide";
-import { PromoVideo } from "../components/promo-video";
 import { CampaignFilm } from "../components/campaign-film";
 import { prisma } from "../lib/prisma";
 import { serializeProduct } from "../lib/products";
@@ -52,7 +51,7 @@ export default async function HomePage() {
             <Link className="hero-secondary" href="#products">세럼 6종 보기</Link>
           </div>
         </div>
-        <div className="hero-visual">
+        <div className="hero-visual" id="brand-film">
           <Link className="campaign-product" href={`/products/${campaign.slug}`}>
             <Image src={campaign.imageUrl} alt={`마리엔비 ${campaign.code} 세럼 정면`} fill priority sizes="(max-width: 760px) 84vw, 49vw" />
             <span><strong>{campaign.code}</strong>{campaign.guide?.focus}<small>{campaign.volume}</small></span>
@@ -100,10 +99,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section-shell brand-film-section" id="brand-film">
-        <h2>마리엔비 브랜드 영상</h2>
-        <PromoVideo />
-      </section>
       <p className="cosmetic-disclaimer">
         피부 겉모습을 위한 화장품입니다. 개인에 따라 경험은 다를 수 있습니다.
       </p>
