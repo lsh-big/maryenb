@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { concerns, getRoutineCandidates } from "../data/product-guides";
 import { ProductCard } from "./product-card";
+import { ProductArt } from "./product-art";
 import { apiFetch } from "../lib/client-api";
 import { formatPrice } from "../lib/products";
 
@@ -30,12 +31,12 @@ function Options({ name, label, options, onChange, selection }) {
   </fieldset>;
 }
 
-function SerumFacts({ product, candidate = false, sharedRoutine = false }) {
+function SerumFacts({ product, sharedRoutine = false }) {
   const { guide } = product;
   return <article className="serum-facts" style={{ "--product-wash": guide.wash, "--product-accent": guide.accent }}>
     <p className="serum-code">{product.code}</p>
     <h3>{product.name}</h3>
-    <p>{candidate ? guide.summary : guide.tags.slice(0, 2).join(" · ")}</p>
+    <p>{guide.tags.slice(0, 2).join(" · ")}</p>
     <dl>
       <div><dt>주요 성분</dt><dd className="serum-ingredients">
         {guide.points.map(([amount, ingredient], index) => (
@@ -51,7 +52,29 @@ function SerumFacts({ product, candidate = false, sharedRoutine = false }) {
       </>}
       <div><dt>판매가</dt><dd>{product.price == null ? formatPrice(null) : `${formatPrice(product.price)}원`}</dd></div>
     </dl>
-    <Link className={candidate ? "button button-dark" : "text-link"} href={`/products/${product.slug}`} aria-label={`${product.code} 상세 보기`}>상세 보기</Link>
+    <Link className="text-link" href={`/products/${product.slug}`} aria-label={`${product.code} 상세 보기`}>상세 보기</Link>
+  </article>;
+}
+
+function SerumCandidate({ product, sharedRoutine }) {
+  const { guide } = product;
+  const summary = guide.summary.split(". ")[0].replace(/\.$/, "") + ".";
+  return <article className="serum-facts serum-candidate"
+    style={{ "--product-wash": guide.wash, "--product-accent": guide.accent }}>
+    <div className="candidate-overview">
+      <ProductArt imageUrl={product.imageUrl} category={product.category} code={product.code} sizes="96px" />
+      <div>
+        <span className="serum-code">{product.code}</span>
+        <h3>{product.name}</h3>
+        <p className="candidate-focus">{guide.focus}</p>
+      </div>
+    </div>
+    <p className="candidate-reason">{summary}</p>
+    {!sharedRoutine && <p className="candidate-usage">{guide.timing} · {guide.frequency}</p>}
+    <div className="candidate-action">
+      <strong>{product.price == null ? formatPrice(null) : `${formatPrice(product.price)}원`}</strong>
+      <Link className="button button-dark" href={`/products/${product.slug}`} aria-label={`${product.code} 상세 보기`}>상세 보기</Link>
+    </div>
   </article>;
 }
 
@@ -95,6 +118,9 @@ export function ProductCollection({ products }) {
   const filtered = currentProducts.filter((p) => filter === "all" || p.guide?.concerns.includes(filter));
   const guided = currentProducts.filter((p) => p.guide);
   const candidates = getRoutineCandidates(guided, concern, experience);
+  const firstCandidateGuide = candidates[0]?.guide;
+  const sharedCandidateRoutine = candidates.length > 1 && candidates.every(({ guide }) =>
+    guide.timing === firstCandidateGuide.timing && guide.frequency === firstCandidateGuide.frequency);
   const answered = Boolean(concern && experience);
   const concernLabel = routineConcerns.find(({ id }) => id === concern)?.label;
   const comparison = [...guided].sort((a, b) => a.code.localeCompare(b.code, "en", { numeric: true }));
@@ -119,7 +145,12 @@ export function ProductCollection({ products }) {
           ? <h3>{concernLabel} 고민에서 살펴볼 세럼 {candidates.length}종</h3>
           : <p>두 답변에 맞춰 후보를 좁힐 안내가 부족해요.</p>)}
       </div>
-      {answered && (candidates.length ? <div className="candidate-grid">{candidates.map((p) => <SerumFacts key={p.slug} product={p} candidate />)}</div> : <a className="text-link" href="#compare">6종 전체 비교하기 →</a>)}
+      {answered && (candidates.length ? <>
+        {sharedCandidateRoutine && <p className="candidate-shared-usage">
+          <strong>공통 사용 안내</strong> {firstCandidateGuide.timing} · {firstCandidateGuide.frequency}
+        </p>}
+        <div className="candidate-grid">{candidates.map((p) => <SerumCandidate key={p.slug} product={p} sharedRoutine={sharedCandidateRoutine} />)}</div>
+      </> : <a className="text-link" href="#compare">6종 전체 비교하기 →</a>)}
     </section>
 
     <section className="products-section" id="products">

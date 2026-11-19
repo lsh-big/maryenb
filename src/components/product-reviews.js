@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Star, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { reviewPhotoLimit, reviewPhotoTypes, reviewTextLimit } from "../lib/review-settings";
 import { useAuth } from "./auth-provider";
 
@@ -34,6 +34,9 @@ function ReviewPanel({ slug }) {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
+  const [openPhoto, setOpenPhoto] = useState(null);
+  const photoDialog = useRef(null);
+  const photoTrigger = useRef(null);
 
   useEffect(() => {
     if (loading) return;
@@ -137,9 +140,33 @@ function ReviewPanel({ slug }) {
         <time dateTime={review.createdAt}>{dateFormat.format(new Date(review.createdAt))}</time>
       </div>
       <p>{review.body}</p>
-      {review.photo && <Image src={`/api/reviews/photo/${review.id}`} alt="구매 회원이 첨부한 후기 사진"
-        width={review.photo.width} height={review.photo.height} unoptimized className="review-photo" />}
+      {review.photo && <button className="review-photo-trigger" type="button" aria-label="후기 사진 확대"
+        aria-haspopup="dialog" onClick={(event) => {
+          photoTrigger.current = event.currentTarget;
+          setOpenPhoto(review);
+          photoDialog.current.showModal();
+        }}>
+        <Image src={`/api/reviews/photo/${review.id}`} alt=""
+          width={review.photo.width} height={review.photo.height} unoptimized className="review-photo" />
+      </button>}
     </article>)}
     {data?.nextCursor && <button className="button review-more" type="button" disabled={busy} onClick={loadMore}>후기 더 보기</button>}
+    <dialog ref={photoDialog} className="review-photo-dialog" aria-labelledby="review-photo-title"
+      onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}
+      onClose={() => {
+        setOpenPhoto(null);
+        photoTrigger.current?.focus({ preventScroll: true });
+      }}>
+      <div className="review-photo-panel">
+        <div className="review-photo-heading">
+          <h3 id="review-photo-title">후기 사진</h3>
+          <button className="review-photo-close" type="button" aria-label="사진 닫기" onClick={() => photoDialog.current.close()}>
+            <X size={22} aria-hidden="true" />
+          </button>
+        </div>
+        {openPhoto && <Image src={`/api/reviews/photo/${openPhoto.id}`} alt="구매 회원이 첨부한 후기 사진 확대"
+          width={openPhoto.photo.width} height={openPhoto.photo.height} unoptimized className="review-photo-expanded" />}
+      </div>
+    </dialog>
   </>;
 }
