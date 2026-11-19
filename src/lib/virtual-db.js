@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import catalog from "../data/products.json";
 
-const directory = path.join(process.cwd(), ".data");
+const directory = path.resolve(process.env.DEMO_DATA_DIRECTORY || ".data");
 const filename = path.join(directory, "virtual-db.json");
 const state = globalThis.__maryenbVirtualDatabase ??= { queue: Promise.resolve() };
 
@@ -18,6 +18,11 @@ async function read() {
 export async function getVirtualProducts() {
   await state.queue;
   return (await read()).products;
+}
+
+export async function getVirtualOrders(userId) {
+  await state.queue;
+  return (await read()).orders.filter((order) => order.userId === userId).slice(-50).reverse();
 }
 
 export async function createVirtualOrder(items, method, userId) {

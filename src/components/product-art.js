@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-export function ProductArt({ imageUrl, category, code, alt = "", className = "" }) {
+export function ProductArt({ imageUrl, category, code, alt = "", className = "", priority = false, sizes = "(max-width: 560px) 50vw, (max-width: 800px) 46vw, 290px" }) {
   if (imageUrl) {
     return (
       <div
@@ -12,7 +12,8 @@ export function ProductArt({ imageUrl, category, code, alt = "", className = "" 
           src={imageUrl}
           alt={alt}
           fill
-          sizes="(max-width: 560px) 50vw, (max-width: 800px) 46vw, 290px"
+          sizes={sizes}
+          priority={priority}
         />
         <span className="product-art-caption">{code}</span>
       </div>

@@ -1,0 +1,135 @@
+import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
+import { test } from "node:test";
+import { settleOrder, validatePayment } from "../src/lib/payment-lifecycle.js";
+import { verifiedWebhookId } from "../src/lib/webhook-signature.js";
+import { hasSameOrigin } from "../src/lib/request-origin.js";
+import { configuredShippingFee, publicStoreProduct } from "../src/lib/sales-config.js";
+
+const now = new Date("2026-11-19T01:00:00Z");
+
+function reservation(overrides = {}) {
+  let stock = 7;
+  let order = {
+    id: 1, orderNumber: "mb-test", total: 15700, status: "PENDING",
+    reservationExpiresAt: now, items: [{ productId: 3, quantity: 2 }], ...overrides,
+  };
+  const tx = {
+    order: { update: async ({ data }) => (order = { ...order, ...data }) },
+    product: { update: async ({ data }) => { stock += data.stock.increment; } },
+  };
+  return {
+    apply: (status, extra) => settleOrder(tx, order, status && { status, ...extra }, now),
+    stock: () => stock,
+  };
+}
+
+test("verified failures release the reservation once across repeated checks", async () => {
+  const attempt = reservation();
+  const result = await attempt.apply("FAILED");
+  assert.equal(result.status, "CANCELLED");
+  assert.deepEqual(result.inventoryReleasedAt, now);
+  await attempt.apply("FAILED");
+  await attempt.apply("CANCELLED");
+  assert.equal(attempt.stock(), 9);
+});
+
+test("no provider record and nonterminal statuses hold inventory after reservation deadline", async () => {
+  const attempt = reservation();
+  for (const providerStatus of [null, "READY", "PENDING", "PAY_PENDING", "VIRTUAL_ACCOUNT_ISSUED"]) {
+    const result = await attempt.apply(providerStatus);
+    assert.equal(result.status, "PENDING");
+    assert.ok(result.nextPaymentCheckAt > now);
+    assert.equal(attempt.stock(), 7);
+  }
+});
+
+test("approval wins over a later failure lookup and repeats leave stock reserved", async () => {
+  const attempt = reservation();
+  assert.equal((await attempt.apply("PAID")).status, "PAID");
+  assert.equal((await attempt.apply("FAILED")).status, "PAID");
+  assert.equal((await attempt.apply("PAID")).status, "PAID");
+  assert.equal(attempt.stock(), 7);
+});
+
+test("late approval enters operator review and its refund never restores stock twice", async () => {
+  const attempt = reservation();
+  await attempt.apply("FAILED");
+  const late = await attempt.apply("PAID");
+  assert.equal(late.status, "PAYMENT_REVIEW");
+  assert.equal(late.paymentIssue, "LATE_APPROVAL");
+  assert.equal((await attempt.apply("CANCELLED")).status, "REFUNDED");
+  assert.equal(attempt.stock(), 9);
+});
+
+test("full refund restores an unshipped reservation only", async () => {
+  const unshipped = reservation({ status: "REFUND_PENDING" });
+  const shipped = reservation({ status: "SHIPPED", shippedAt: now });
+  assert.equal((await unshipped.apply("CANCELLED")).status, "REFUNDED");
+  assert.equal((await shipped.apply("CANCELLED")).status, "REFUNDED");
+  assert.equal(unshipped.stock(), 9);
+  assert.equal(shipped.stock(), 7);
+});
+
+test("partial cancellation goes to review without restoring stock", async () => {
+  const attempt = reservation({ status: "PAID" });
+  assert.equal((await attempt.apply("PARTIAL_CANCELLED")).paymentIssue, "PARTIAL_CANCELLED");
+  assert.equal(attempt.stock(), 7);
+});
+
+test("payment lookup requires order ID, amount, currency and store to match", () => {
+  const order = { orderNumber: "mb-test", total: 15700 };
+  const valid = { id: "mb-test", amount: { total: 15700 }, currency: "KRW", storeId: "store-fixture" };
+  assert.doesNotThrow(() => validatePayment(order, valid, "store-fixture"));
+  for (const mismatch of [{ id: "other" }, { amount: { total: 1 } }, { currency: "USD" }, { storeId: "other" }]) {
+    assert.throws(() => validatePayment(order, { ...valid, ...mismatch }, "store-fixture"));
+  }
+});
+
+test("webhook verifies the exact bytes, a valid versioned signature and the timestamp", () => {
+  const id = "fixture-event";
+  const timestamp = Math.floor(now.getTime() / 1000);
+  const raw = Buffer.from('{"message":"결제"}');
+  const key = Buffer.from("maryenb-test-webhook-key");
+  const signature = createHmac("sha256", key).update(`${id}.${timestamp}.`).update(raw).digest("base64");
+  const headers = new Headers({ "webhook-id": id, "webhook-timestamp": String(timestamp), "webhook-signature": `v2,ignored v1,${signature}` });
+  const secret = `whsec_${key.toString("base64")}`;
+  assert.equal(verifiedWebhookId(raw, headers, secret, now.getTime()), id);
+  assert.equal(verifiedWebhookId(Buffer.concat([raw, Buffer.from(" ")]), headers, secret, now.getTime()), null);
+  assert.equal(verifiedWebhookId(raw, headers, secret, now.getTime() + 301_000), null);
+  headers.delete("webhook-signature");
+  assert.equal(verifiedWebhookId(raw, headers, secret, now.getTime()), null);
+});
+
+test("same-origin checkout accepts the browser host when Next normalizes the request URL", (context) => {
+  const configured = process.env.SHOP_ORIGIN;
+  delete process.env.SHOP_ORIGIN;
+  context.after(() => {
+    if (configured !== undefined) process.env.SHOP_ORIGIN = configured;
+  });
+  const request = (origin) => new Request("http://localhost:3167/api/checkout", {
+    headers: { host: "127.0.0.1:3167", origin },
+  });
+  assert.equal(hasSameOrigin(request("http://127.0.0.1:3167")), true);
+  assert.equal(hasSameOrigin(request("http://localhost:3167")), false);
+  assert.equal(hasSameOrigin(request("http://127.0.0.1:3000")), false);
+});
+
+test("unconfirmed sale prices and stock are suppressed and explicit free shipping is recognized", (context) => {
+  const configuration = { SALES_CATALOG_CONFIRMED: process.env.SALES_CATALOG_CONFIRMED, SHIPPING_FEE: process.env.SHIPPING_FEE };
+  context.after(() => {
+    for (const [name, value] of Object.entries(configuration)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  });
+  const product = { code: "ANC5", price: 15700, compareAtPrice: 17000, stock: 100 };
+  process.env.SALES_CATALOG_CONFIRMED = "false";
+  assert.deepEqual(publicStoreProduct(product), { code: "ANC5", price: null, compareAtPrice: null, stock: 0, purchaseUnavailable: true });
+  process.env.SALES_CATALOG_CONFIRMED = "true";
+  assert.equal(publicStoreProduct(product), product);
+  delete process.env.SHIPPING_FEE;
+  assert.equal(configuredShippingFee(), null);
+  process.env.SHIPPING_FEE = "0";
+  assert.equal(configuredShippingFee(), 0);
+});

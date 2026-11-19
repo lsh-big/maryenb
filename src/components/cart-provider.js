@@ -40,6 +40,7 @@ function CartStore({ children, account, legacyId, loading }) {
   const [savedItems, setSavedItems] = useState([]);
   const [ready, setReady] = useState(false);
   const [inventory, setInventory] = useState(null);
+  const [inventoryRevision, setInventoryRevision] = useState(0);
 
   useEffect(() => {
     if (loading) return;
@@ -80,7 +81,7 @@ function CartStore({ children, account, legacyId, loading }) {
       .then((products) => { if (active) setInventory(products); })
       .catch(() => {});
     return () => { active = false; setInventory(null); };
-  }, [pathname]);
+  }, [pathname, inventoryRevision]);
 
   const items = inventory ? savedItems.map((item) => {
     const product = inventory.find((product) => product.slug === item.slug);
@@ -117,6 +118,7 @@ function CartStore({ children, account, legacyId, loading }) {
 
   const value = {
     items, ready, addItem, updateQuantity,
+    refreshInventory: () => setInventoryRevision((revision) => revision + 1),
     clearCart: () => save([]),
     removeItem: (id) => save(latest.current.filter((item) => item.id !== id)),
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),

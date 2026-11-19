@@ -54,6 +54,11 @@ export async function demoRequest(path, options = {}) {
       return json({ user: account });
     }
     if (path === "/api/products") return json(database.products.filter((product) => product.isActive));
+    if (path === "/api/orders") {
+      const currentUser = user();
+      if (!currentUser) return json({ error: "주문 계정으로 로그인해 주세요." }, 401);
+      return json({ orders: database.orders.filter((order) => order.userId === currentUser.id).slice(-50).reverse() });
+    }
     if (path === "/api/checkout" && (!options.method || options.method === "GET")) return json({ virtual: true, browserLocal: true, methods, shippingFee: 0 });
     if (path === "/api/checkout") {
       const currentUser = user();

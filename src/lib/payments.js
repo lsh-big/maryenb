@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
-import { isVirtualDatabase } from "./database-mode";
+import { catalogConfirmed, configuredShippingFee } from "./sales-config";
+import { lockOrder, settleOrder, validatePayment } from "./payment-lifecycle";
 
 export const paymentMethods = {
   naver: { label: "네이버페이", env: "PORTONE_NAVER_CHANNEL_KEY", payMethod: "EASY_PAY", provider: "NAVERPAY" },
@@ -9,21 +10,62 @@ export const paymentMethods = {
 };
 
 export function paymentReady(method) {
-  return Boolean(process.env.CHECKOUT_ENABLED === "true" && process.env.DATABASE_URL && process.env.PORTONE_STORE_ID && process.env.PORTONE_API_SECRET && process.env[paymentMethods[method]?.env] && /^\d+$/.test(process.env.SHIPPING_FEE || ""));
+  return Boolean(process.env.CHECKOUT_ENABLED === "true" && catalogConfirmed()
+    && process.env.SALES_POLICIES_PUBLISHED === "true" && process.env.DATABASE_URL
+    && process.env.PORTONE_STORE_ID && process.env.PORTONE_API_SECRET && process.env.PORTONE_WEBHOOK_SECRET
+    && process.env.PAYMENT_RECONCILE_SECRET && process.env[paymentMethods[method]?.env] && configuredShippingFee() !== null);
 }
 
-// This endpoint is also called by the webhook: a browser redirect is never proof of payment.
-export async function verifyPayment(paymentId) {
-  if (isVirtualDatabase()) throw new Error("가상 주문은 실제 결제 승인 조회를 사용하지 않습니다.");
-  const order = await prisma.order.findUnique({ where: { orderNumber: paymentId } });
-  if (!order) throw new Error("주문을 찾을 수 없습니다.");
-  const response = await fetch(`https://api.portone.io/payments/${encodeURIComponent(paymentId)}`, {
-    headers: { Authorization: `PortOne ${process.env.PORTONE_API_SECRET}` }, cache: "no-store",
+function paymentUrl(id) {
+  return `https://api.portone.io/payments/${encodeURIComponent(id)}`;
+}
+
+export async function lookupPayment(order) {
+  const storeId = order.storeId || process.env.PORTONE_STORE_ID;
+  if (!process.env.PORTONE_API_SECRET || !storeId) throw new Error("결제 조회 설정을 확인해 주세요.");
+  const query = new URLSearchParams({ storeId });
+  const response = await fetch(`${paymentUrl(order.orderNumber)}?${query}`, {
+    headers: { Authorization: `PortOne ${process.env.PORTONE_API_SECRET}` },
+    cache: "no-store", signal: AbortSignal.timeout(8_000),
   });
+  if (response.status === 404 && (await response.json()).type === "PAYMENT_NOT_FOUND") return null;
   if (!response.ok) throw new Error("결제 조회에 실패했습니다. 잠시 후 다시 확인해 주세요.");
   const payment = await response.json();
-  if (payment.status !== "PAID") throw new Error("결제가 완료되지 않았습니다.");
-  if (payment.amount?.total !== Number(order.total) || payment.currency !== "KRW" || payment.storeId !== process.env.PORTONE_STORE_ID) throw new Error("결제 정보가 주문과 일치하지 않습니다.");
-  await prisma.order.updateMany({ where: { id: order.id, status: "PENDING" }, data: { status: "PAID" } });
-  return { orderNumber: order.orderNumber, total: Number(order.total), status: "PAID" };
+  validatePayment(order, payment, storeId);
+  return payment;
+}
+
+export async function verifyPayment(paymentId, { ownerId, webhook } = {}) {
+  return prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, paymentId);
+    if (!order || (ownerId && order.ownerId !== ownerId)) return null;
+    if (webhook) {
+      if (webhook.storeId !== (order.storeId || process.env.PORTONE_STORE_ID)) return null;
+      const event = await tx.paymentWebhookEvent.createMany({
+        data: [{ id: webhook.id, type: webhook.type, paymentId }], skipDuplicates: true,
+      });
+      if (!event.count) return order;
+    }
+
+    const payment = await lookupPayment(order);
+    if (webhook && (!payment || ["READY", "PENDING", "PAY_PENDING"].includes(payment.status))) {
+      // Keep the event retryable while the transaction is not yet visible in the API.
+      throw new Error("결제사 상태 확인 대기 중");
+    }
+    return settleOrder(tx, order, payment);
+  }, { maxWait: 5_000, timeout: 12_000 });
+}
+
+export async function requestFullCancellation(order) {
+  const response = await fetch(`${paymentUrl(order.orderNumber)}/cancel`, {
+    method: "POST",
+    headers: {
+      Authorization: `PortOne ${process.env.PORTONE_API_SECRET}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `"refund-${order.orderNumber}"`,
+    },
+    body: JSON.stringify({ storeId: order.storeId || process.env.PORTONE_STORE_ID, reason: "판매자 전액 취소" }),
+    signal: AbortSignal.timeout(65_000),
+  });
+  if (!response.ok) throw new Error("결제사 취소 결과를 확인해 주세요.");
 }

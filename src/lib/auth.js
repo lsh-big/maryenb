@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { cookies } from "next/headers";
 
-const filename = path.join(process.cwd(), ".data", "auth.json");
+const filename = path.resolve(process.env.DEMO_DATA_DIRECTORY || ".data", "auth.json");
 const state = globalThis.__maryenbAuth ??= { queue: Promise.resolve() };
 const digest = (token) => createHash("sha256").update(token).digest("hex");
 const publicUser = (user) => ({ id: user.id, name: user.name, email: user.email, guest: user.guest });

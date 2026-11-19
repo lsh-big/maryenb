@@ -9,6 +9,7 @@
     "prestart": "npm run build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --test",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

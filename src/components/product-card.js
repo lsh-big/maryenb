@@ -17,11 +17,13 @@ export function ProductCard({ product, index = 0 }) {
         <div className="product-card-info">
           <h3 className="product-name">{product.name}</h3>
           <p className="product-ingredient">{product.guide?.focus || product.ingredients.split(" · ")[0]}</p>
+          <p className="product-volume">{product.volume}</p>
           <p className="product-price">
             <strong>{product.price == null ? formatPrice(null) : `${formatPrice(product.price)}원`}</strong>
             {product.price != null && product.compareAtPrice > product.price && <del>{formatPrice(product.compareAtPrice)}원</del>}
           </p>
           {unavailable && <p className="product-sales-note">{unavailable}</p>}
+          <span className="card-detail-link">상세 보기</span>
         </div>
       </Link>
     </article>

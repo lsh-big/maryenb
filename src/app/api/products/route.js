@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { serializeProduct } from "../../../lib/products";
-import { initializeCatalogInventory } from "../../../lib/catalog-inventory";
+import { publicStoreProduct } from "../../../lib/sales-config";
 import { isVirtualDatabase } from "../../../lib/database-mode";
 import { getVirtualProducts } from "../../../lib/virtual-db";
 
@@ -19,7 +19,6 @@ export async function GET(request) {
       const products = (await getVirtualProducts()).filter((p) => p.isActive && (!category || p.category === category) && (featured !== "true" || p.isFeatured));
       return NextResponse.json(products.slice(0, limit).map(serializeProduct));
     }
-    await initializeCatalogInventory(prisma);
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
@@ -30,7 +29,7 @@ export async function GET(request) {
       take: limit,
     });
 
-    return NextResponse.json(products.map(serializeProduct));
+    return NextResponse.json(products.map(publicStoreProduct).map(serializeProduct));
   } catch (error) {
     console.error("제품 목록 조회에 실패했습니다.", error);
     return NextResponse.json(

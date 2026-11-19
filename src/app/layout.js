@@ -7,6 +7,7 @@ import { AuthProvider } from "../components/auth-provider";
 import { seller } from "../data/seller";
 
 export const viewport = { viewportFit: "cover" };
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: {
@@ -33,6 +34,7 @@ export default function RootLayout({ children }) {
                 <span>대표 {seller.representative}</span>
                 <span>사업자등록번호 {seller.registrationNumber}</span>
               </div>
+              <Link className="footer-policy-link" href="/orders">주문·배송 조회</Link>
               <Link className="footer-policy-link" href="/policies">
                 판매자·이용·개인정보 안내
               </Link>

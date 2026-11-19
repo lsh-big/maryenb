@@ -35,6 +35,7 @@ function Checkout() {
 
 function CheckoutForm({ slug, quantity, direct }) {
   const cart = useCart();
+  const [inventoryRevision, setInventoryRevision] = useState(0);
   const [selection, setSelection] = useState({ ready: !direct, item: null });
   const items = direct ? (selection.item ? [selection.item] : []) : cart.items;
   const subtotal = direct ? (selection.item ? selection.item.price * quantity : null) : cart.subtotal;
@@ -59,7 +60,7 @@ function CheckoutForm({ slug, quantity, direct }) {
       })
       .catch(() => { if (active) setSelection({ ready: true, item: null }); });
     return () => { active = false; };
-  }, [direct, slug, quantity]);
+  }, [direct, slug, quantity, inventoryRevision]);
   const { user, loading, startGuest } = useAuth();
   const formRef = useRef(null);
   const errorRef = useRef(null);
@@ -71,24 +72,49 @@ function CheckoutForm({ slug, quantity, direct }) {
   const [paid, setPaid] = useState(null);
   const [pending, setPending] = useState("");
   const [sdkReady, setSdkReady] = useState(false);
+  const pendingKey = `maryenb-pending:${checkoutPath}`;
 
   useEffect(() => {
     if (error) errorRef.current?.focus();
   }, [error]);
 
+  function clearPending() {
+    setPending("");
+    try { sessionStorage.removeItem(pendingKey); } catch {}
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("paymentId")) {
+      for (const key of ["paymentId", "txId", "code", "message"]) url.searchParams.delete(key);
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }
+
   async function confirm(paymentId) {
     const response = await apiFetch("/api/payments/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId }) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
-    setPaid(result);
-    setPending("");
-    if (!direct) cart.clearCart();
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 404) clearPending();
+    if (!response.ok) throw new Error(result.error || "주문 상태를 확인하지 못했습니다.");
+    if (result.status === "PENDING") throw new Error("결제사 최종 상태를 기다리고 있습니다. 잠시 후 다시 확인해 주세요.");
+    if (result.paymentIssue || ["PAYMENT_REVIEW", "REFUND_PENDING"].includes(result.status)) {
+      throw new Error("주문 상태를 확인하고 있습니다. 주문·배송 조회에서 진행 상황을 확인해 주세요.");
+    }
+    clearPending();
+    if (["PAID", "PREPARING", "SHIPPED", "DELIVERED"].includes(result.status)) {
+      setPaid(result);
+      if (!direct) cart.clearCart();
+    } else {
+      setInventoryRevision((revision) => revision + 1);
+      if (!direct) cart.refreshInventory();
+      setError(result.status === "REFUNDED" ? "환불이 확인되었습니다." : "결제가 종료되었습니다. 판매 가능한 수량을 다시 확인해 주세요.");
+    }
   }
 
   useEffect(() => {
     apiFetch("/api/checkout").then((r) => { if (!r.ok) throw new Error(); return r.json(); }).then(setConfig).catch(() => setError("결제 설정을 불러오지 못했습니다. 새로고침해 주세요."));
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("paymentId");
+    let id = params.get("paymentId");
+    if (!id) {
+      try { id = sessionStorage.getItem(pendingKey); } catch {}
+    }
     if (id) {
       setPending(id);
       setBusy(true);
@@ -101,7 +127,7 @@ function CheckoutForm({ slug, quantity, direct }) {
 
   async function submit(event) {
     event.preventDefault();
-    if (submitting.current || !ready || !user || (!config.virtual && user.guest) || hasUnavailable) return;
+    if (submitting.current || !config || pending || !ready || !user || (!config.virtual && user.guest) || hasUnavailable) return;
     submitting.current = true;
     setError(""); setBusy(true);
     try {
@@ -126,14 +152,18 @@ function CheckoutForm({ slug, quantity, direct }) {
         return;
       }
       setPending(payment.paymentId);
-      const result = await window.PortOne.requestPayment({ ...payment, redirectUrl: new URL(checkoutPath, window.location.origin).href });
-      if (result?.code) throw new Error(result.message || "결제가 취소되었습니다.");
+      try { sessionStorage.setItem(pendingKey, payment.paymentId); } catch {}
+      try {
+        await window.PortOne.requestPayment({ ...payment, redirectUrl: new URL(checkoutPath, window.location.origin).href });
+      } catch {
+        // The authoritative lookup also runs when the payment window closes or the SDK rejects.
+      }
       await confirm(payment.paymentId);
     } catch (e) { setError(e.message || "결제 중 문제가 발생했습니다."); }
     finally { submitting.current = false; setBusy(false); }
   }
 
-  if (paid) return <section className="checkout-shell checkout-success"><h1>{paid.virtual ? "가상 주문 완료" : "주문 완료"}</h1><p>{paid.virtual ? "가상 주문이 완료되었습니다. 실제 결제나 배송은 진행되지 않습니다." : "결제가 완료되었습니다."}</p><p>주문번호: {paid.orderNumber}</p><strong>{formatPrice(paid.total)}원</strong><Link className="button button-dark" href="/">쇼핑 계속하기</Link></section>;
+  if (paid) return <section className="checkout-shell checkout-success"><h1>{paid.virtual ? "가상 주문 완료" : "주문 완료"}</h1><p>{paid.virtual ? "가상 주문이 완료되었습니다. 실제 결제나 배송은 진행되지 않습니다." : "결제가 완료되었습니다."}</p><p>주문번호: {paid.orderNumber}</p><strong>{formatPrice(paid.total)}원</strong><Link className="button button-dark" href="/orders">주문·배송 조회</Link><Link className="text-link" href="/">쇼핑 계속하기</Link></section>;
 
   return <section className="checkout-shell">
     {config && !config.virtual && config.methods.some((entry) => entry.enabled) && <Script src="https://cdn.portone.io/v2/browser-sdk.js" onReady={() => setSdkReady(true)} onError={() => setError("결제 모듈을 불러오지 못했습니다. 새로고침해 주세요.")} />}

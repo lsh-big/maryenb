@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { seller } from "../../data/seller";
+import { isVirtualDatabase } from "../../lib/database-mode";
+import { configuredShippingFee } from "../../lib/sales-config";
+import { formatPrice } from "../../lib/products";
 
 export const metadata = {
   title: "판매자·이용·개인정보 안내",
 };
 
 export default function PoliciesPage() {
+  const virtual = isVirtualDatabase();
+  const shippingFee = virtual ? 0 : configuredShippingFee();
   return (
     <section className="policy-shell">
       <Link className="back-link" href="/">
@@ -37,8 +42,8 @@ export default function PoliciesPage() {
       <section className="policy-section" id="delivery">
         <h2>배송·교환·반품 안내</h2>
         <dl className="routine-facts">
-          <div><dt>배송비</dt><dd>주문 금액 요약에서 확인할 수 있습니다. 가상 주문의 배송비는 0원입니다.</dd></div>
-          <div><dt>발송 기준</dt><dd>가상 주문은 발송되지 않습니다. 실제 판매의 발송 일정은 확정 후 안내합니다.</dd></div>
+          <div><dt>배송비</dt><dd>{virtual ? "가상 주문 0원" : shippingFee == null ? "판매 조건 확정 후 안내" : shippingFee === 0 ? "무료" : `${formatPrice(shippingFee)}원`}</dd></div>
+          <div><dt>발송 기준</dt><dd>{virtual ? "가상 주문은 발송되지 않습니다." : "발송 일정은 확정 후 안내합니다."}</dd></div>
           <div><dt>반품 접수</dt><dd>실제 판매의 교환·반품 접수 방법과 비용은 확정 후 안내합니다.</dd></div>
         </dl>
       </section>

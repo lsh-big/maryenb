@@ -3,7 +3,7 @@ import { ProductDetail } from "../../../components/product-detail";
 import { prisma } from "../../../lib/prisma";
 import { serializeProduct } from "../../../lib/products";
 import catalog from "../../../data/products.json";
-import { initializeCatalogInventory } from "../../../lib/catalog-inventory";
+import { configuredShippingFee, publicStoreProduct } from "../../../lib/sales-config";
 import { isVirtualDatabase } from "../../../lib/database-mode";
 import { getVirtualProducts } from "../../../lib/virtual-db";
 
@@ -14,15 +14,15 @@ export default async function ProductPage({ params }) {
   const catalogProduct = catalog.find((item) => item.slug === slug);
   let product = catalogProduct && { ...catalogProduct, purchaseUnavailable: true, price: null };
 
-  if (isVirtualDatabase()) {
+  const virtual = isVirtualDatabase();
+  if (virtual) {
     product = (await getVirtualProducts()).find((item) => item.slug === slug && item.isActive);
   } else if (process.env.DATABASE_URL) {
     try {
-      await initializeCatalogInventory(prisma);
       const databaseProduct = await prisma.product.findUnique({
         where: { slug, isActive: true },
       });
-      product = databaseProduct;
+      product = databaseProduct && publicStoreProduct(databaseProduct);
     } catch (error) {
       console.error("제품 정보를 불러오지 못했습니다.", error);
     }
@@ -30,5 +30,5 @@ export default async function ProductPage({ params }) {
 
   if (!product) notFound();
 
-  return <ProductDetail product={serializeProduct(product)} />;
+  return <ProductDetail product={serializeProduct(product)} virtual={virtual} shippingFee={configuredShippingFee()} />;
 }

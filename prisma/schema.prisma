@@ -15,6 +15,8 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+  PAYMENT_REVIEW
+  REFUND_PENDING
 }
 
 model Product {
@@ -48,6 +50,16 @@ model Order {
   id              Int         @id @default(autoincrement())
   orderNumber     String      @unique
   status          OrderStatus @default(PENDING)
+  ownerId         String?
+  storeId         String?
+  reservationExpiresAt DateTime?
+  nextPaymentCheckAt DateTime?
+  inventoryReleasedAt DateTime?
+  paymentIssue    String?
+  carrier         String?
+  trackingNumber  String?
+  shippedAt       DateTime?
+  refundRequestedAt DateTime?
   customerEmail   String
   recipientName   String
   phone           String
@@ -63,6 +75,25 @@ model Order {
 
   @@index([customerEmail, createdAt])
   @@index([status, createdAt])
+  @@index([ownerId, createdAt])
+  @@index([status, nextPaymentCheckAt])
+}
+
+model PaymentWebhookEvent {
+  id          String   @id
+  paymentId   String
+  type        String
+  processedAt DateTime @default(now())
+}
+
+model OrderOperation {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  operatorId String
+  action     String
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 model OrderItem {
