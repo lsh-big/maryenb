@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "./cart-provider";
 import { useAuth } from "./auth-provider";
@@ -9,9 +11,44 @@ import { useAuth } from "./auth-provider";
 export function SiteHeader() {
   const { itemCount } = useCart();
   const { user, loading, signOut } = useAuth();
+  const pathname = usePathname();
+  const headerRef = useRef(null);
+  const [hideOnScroll, setHideOnScroll] = useState(false);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 760px)");
+    let lastY = window.scrollY;
+
+    function updateOnScroll() {
+      const y = Math.max(0, window.scrollY);
+      if (y <= (headerRef.current?.offsetHeight || 98)) {
+        lastY = y;
+        setHideOnScroll(false);
+        return;
+      }
+      const movement = y - lastY;
+      if (Math.abs(movement) < 8) return;
+      lastY = y;
+      setHideOnScroll(movement > 0);
+    }
+
+    function syncViewport() {
+      lastY = window.scrollY;
+      setHideOnScroll(false);
+      window.removeEventListener("scroll", updateOnScroll);
+      if (mobile.matches) window.addEventListener("scroll", updateOnScroll, { passive: true });
+    }
+
+    syncViewport();
+    mobile.addEventListener("change", syncViewport);
+    return () => {
+      window.removeEventListener("scroll", updateOnScroll);
+      mobile.removeEventListener("change", syncViewport);
+    };
+  }, [pathname]);
 
   return (
-    <header className="site-header">
+    <header ref={headerRef} className="site-header" data-scroll-hidden={hideOnScroll ? "" : undefined}>
       <div className="header-inner">
         <nav className="primary-nav" aria-label="주요 메뉴">
           <Link href="/#products">세럼</Link>

@@ -19,7 +19,7 @@ async function fetchReviews(url, options) {
 }
 
 export function ProductReviews({ slug, enabled }) {
-  return <section id="reviews" className="detail-chapter product-reviews" aria-labelledby="reviews-title">
+  return <section id="reviews" className="detail-chapter product-reviews" tabIndex={-1} aria-labelledby="reviews-title">
     <h2 id="reviews-title">구매 후기</h2>
     {enabled ? <ReviewPanel slug={slug} /> : <p>결제가 확인된 회원은 상품에 별점과 사진 후기를 남길 수 있습니다.</p>}
   </section>;

@@ -12,7 +12,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; scroll-padding-top:calc(76px + env(safe-area-inset-top)); }
 body {
   margin: 0;
   color: var(--ink);
@@ -36,7 +36,7 @@ button { color: inherit; font: inherit; }
   letter-spacing: .07em;
   text-align: center;
 }
-.site-header { position: relative; z-index: 3; border-bottom: 1px solid var(--line); background: var(--paper); }
+.site-header { position:sticky; top:0; z-index:3; padding-top:env(safe-area-inset-top); border-bottom:1px solid var(--line); background:var(--paper); }
 .header-inner {
   display: grid;
   width: min(1200px, calc(100% - 72px));
@@ -389,6 +389,9 @@ button:disabled { cursor:not-allowed; opacity:.5; }
 .auth-agreement input { accent-color:var(--rose); }
 .auth-guest { width:100%; margin-top:18px; border:1px solid var(--rose); color:var(--rose); background:#fff7fa; }
 @media(max-width:760px) {
+  html { scroll-padding-top:calc(98px + env(safe-area-inset-top)); }
+  .site-header { transition:transform .2s ease; }
+  .site-header[data-scroll-hidden]:not(:has(:focus-visible)) { transform:translateY(-100%); }
   .header-inner {
     height:auto;
     grid-template-columns:minmax(0,1fr) auto;
@@ -587,6 +590,9 @@ button:disabled { cursor:not-allowed; opacity:.5; }
 .detail-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .detail-actions .detail-add { min-height:48px; padding-inline:10px; }
 .detail-actions .detail-add:first-child { border:1px solid var(--line); }
+.detail-shortcuts { display:flex; gap:6px; margin-top:14px; }
+.detail-shortcuts a { flex:1 1 0; display:grid; place-items:center; min-height:44px; padding-inline:4px; border:1px solid var(--line); border-radius:8px; color:var(--rose); font-size:.875rem; font-weight:600; white-space:nowrap; }
+.detail-shortcuts a:hover { background:var(--product-wash,var(--paper)); }
 .mobile-buy { display:none; }
 .product-faq summary { min-height:44px; }
 .checkout-entry { display:grid; gap:14px; justify-items:start; padding-block:20px; }
@@ -692,14 +698,26 @@ button:disabled { cursor:not-allowed; opacity:.5; }
 .detail-price strong { font-size:1.55rem; }
 .detail-editorial { margin-top:clamp(40px,8vw,100px); }
 .detail-chapter { padding:clamp(24px,5vw,56px) 0; border-top:1px solid var(--line); }
+.detail-chapter[id] { scroll-margin-top:22px; }
 .detail-chapter h2 { margin:0 0 18px; font-size:clamp(1.4rem,3.2vw,2.35rem); line-height:1.25; letter-spacing:-.045em; }
 .detail-chapter p { line-height:1.7; }
-.texture-chapter { padding-inline:clamp(16px,6vw,70px); background:linear-gradient(120deg,var(--product-wash,#f6e9ed),#fffaf2); }
+.texture-chapter { padding-inline:clamp(16px,6vw,70px); background:linear-gradient(120deg,var(--product-wash,#f6e9ed),#fffaf2); scroll-margin-top:22px; }
 .texture-chapter p { font-size:clamp(1.2rem,2.6vw,2rem); margin:0 0 12px; letter-spacing:-.035em; }
+.texture-chapter-featured { display:grid; grid-template-columns:minmax(0,1fr) minmax(180px,280px); align-items:center; gap:16px clamp(16px,4vw,40px); }
+.texture-chapter .texture-fact { font-size:.9375rem; color:var(--muted); letter-spacing:0; }
+.texture-package { width:min(100%,280px); justify-self:center; margin:0; }
+.texture-package .product-art { aspect-ratio:4/3; border-radius:8px; background:radial-gradient(ellipse at 35% 20%,#fffdf8,var(--product-wash,#f6e9ed) 85%); }
+.texture-package .product-art img { padding:5%; }
+.texture-package .product-art-caption { display:none; }
+.texture-package figcaption { margin-top:6px; font-size:.8125rem; color:var(--muted); text-align:center; }
+@media(max-width:560px) {
+  .texture-chapter-featured { grid-template-columns:1fr; }
+  .texture-package { width:min(100%,230px); }
+}
 .detail-chapter .formula-highlights { margin:16px 0; grid-template-columns:repeat(3,minmax(0,1fr)); }
 .detail-chapter .formula-highlights > div { background:var(--product-wash,#f6e9ed); padding:clamp(8px,2vw,24px); }
 .detail-chapter .formula-highlights strong { font-size:clamp(1.1rem,3.4vw,2.3rem); color:var(--ink); overflow-wrap:anywhere; }
-.detail-chapter .formula-highlights span { font-size:.875rem; overflow-wrap:anywhere; }
+.detail-chapter .formula-highlights span { font-size:.875rem; overflow-wrap:anywhere; text-wrap:balance; }
 .detail-source-note { color:var(--muted); font-size:.875rem; }
 .detail-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .detail-pair > div { display:grid; justify-items:start; align-content:start; gap:8px; padding:clamp(12px,3vw,24px); background:var(--pair-wash); border-radius:6px; overflow-wrap:anywhere; }

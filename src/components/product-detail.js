@@ -46,6 +46,8 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
     ? product.galleryUrls
     : [product.imageUrl].filter(Boolean);
   const [activeImage, setActiveImage] = useState(gallery[0]);
+  const textureDetails = guide?.textureDetails;
+  const texturePackage = gallery[1] || gallery[0];
 
   return (
     <section className="detail-shell" style={{ "--product-accent": guide?.accent, "--product-wash": guide?.wash }}>
@@ -116,15 +118,31 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
           </div>
           {ready && available && !canAdd && <p className="stock-note">선택 수량을 더하면 장바구니에 담을 수 있는 재고를 초과합니다.</p>}
           {added && <p className="stock-note" role="status">장바구니에 담았습니다. <Link href="/cart">장바구니 보기 →</Link></p>}
+          <nav className="detail-shortcuts" aria-label="상품 상세 바로가기">
+            {guide?.texture && <a href="#texture">제형</a>}
+            {guide && <a href="#ingredients">성분</a>}
+            {guide && <a href="#usage">사용법</a>}
+            <a href="#reviews">후기</a>
+          </nav>
         </div>
       </div>
       <div className="detail-editorial">
-        {guide?.texture && <section className="detail-chapter texture-chapter">
-          <h2>텍스처와 사용감</h2>
-          <p>{guide.texture} 세럼</p>
-          <a className="text-link" href={guide.ingredientsSource} target="_blank" rel="noreferrer">공식 제품 설명</a>
+        {guide?.texture && <section id="texture" tabIndex={-1} className={`detail-chapter texture-chapter${textureDetails && texturePackage ? " texture-chapter-featured" : ""}`}>
+          <div>
+            <h2>텍스처와 사용감</h2>
+            <p>{guide.texture} 세럼</p>
+            {textureDetails && <p className="texture-fact">{textureDetails.description}</p>}
+            <a className="text-link" href={textureDetails?.source || guide.ingredientsSource} target="_blank" rel="noreferrer">
+              {textureDetails ? "공식 제형 표기" : "공식 제품 설명"}
+            </a>
+          </div>
+          {textureDetails && texturePackage && <figure className="texture-package">
+            <ProductArt imageUrl={texturePackage} category={product.category} code={product.code}
+              alt={`${product.code} 제품 패키지`} sizes="(max-width: 560px) 68vw, 280px" />
+            <figcaption>제품 패키지</figcaption>
+          </figure>}
         </section>}
-        {guide && <section className="detail-chapter">
+        {guide && <section className="detail-chapter" id="ingredients" tabIndex={-1}>
           <h2>핵심 성분과 함량</h2>
           <div className="formula-highlights">{guide.points.map(([amount, ingredient]) => <div key={ingredient}>
             <strong>{ingredient.endsWith("IU/g") ? `${amount} IU/g` : amount === "CICA" ? "함유" : amount}</strong>
@@ -145,7 +163,7 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
           <ProductAdvantage code={product.code} />
           <Link className="text-link detail-all-compare" href="/#compare">세럼 6종 비교 보기</Link>
         </section>
-        {guide && <section className="detail-chapter">
+        {guide && <section className="detail-chapter" id="usage" tabIndex={-1}>
           <h2>사용 순서와 주의사항</h2>
           <dl className="routine-facts">
             <div><dt>사용 시간</dt><dd>{guide.timing}</dd></div>

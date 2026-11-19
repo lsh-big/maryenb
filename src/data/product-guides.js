@@ -29,6 +29,10 @@ export const productGuides = {
     summary: "붉은기, 고르지 않아 보이는 피부톤과 피부결이 신경 쓰일 때 비교해 볼 아젤라익애씨드 세럼입니다. 5% 배합에 나이아신아마이드와 병풀 추출물을 함께 담았습니다.",
     concerns: ["redness", "tone"], tags: ["붉은기", "피부결", "아젤라익 5%"], accent: "#ad5077", wash: "#fff0f6",
     focus: "아젤라익애씨드 5%", texture: "가벼운 수분 베이스", timing: "제품 라벨에 따라", frequency: "주 2~3회, 소량부터",
+    textureDetails: {
+      description: "공식 제품 자료에는 투명한 겔 세럼으로 표기되어 있습니다.",
+      source: "https://maryenb.com/cdn/shop/files/amazon_ANC5_30ml_09.png?v=1751945378",
+    },
     points: [["5%", "아젤라익애씨드"], ["1%", "나이아신아마이드"], ["CICA", "병풀 추출물"]],
     tip: "세안 후 물기를 닦은 피부에 소량을 바르고 보습제로 마무리하세요. 낮에는 자외선 차단제를 사용하세요.",
     caution: "처음에는 피부의 작은 부위에 시험하고, 눈에 닿지 않도록 하세요. 사용 중 불편함이 느껴지면 중단하세요. 직사광선을 피해 서늘하고 건조한 곳에 보관하세요.",
