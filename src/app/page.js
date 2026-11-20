@@ -45,7 +45,7 @@ export default async function HomePage() {
         </div>
         <div className="hero-visual" id="brand-film">
           <Image
-            src="/images/homepage/mb-hero-lineup-20261015.jpg"
+            src="/images/homepage/mb-hero-lineup-studio.webp"
             alt="마리엔비 세럼 6종: VNC15, ANC5, ANC10, RNT, TNA5, NTZ20"
             fill
             priority
