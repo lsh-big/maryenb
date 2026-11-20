@@ -30,13 +30,16 @@ export async function GET(request, { params }) {
       where: { id: cursor, productId: product.id }, select: { id: true, createdAt: true },
     });
     if (cursor && !position) return failure("후기 목록을 다시 불러와 주세요.", 404);
-    const reviews = await prisma.productReview.findMany({
-      where: position ? { ...where, OR: [
-        { createdAt: { lt: position.createdAt } },
-        { createdAt: position.createdAt, id: { lt: position.id } },
-      ] } : where,
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: pageSize + 1, select: reviewSelection,
-    });
+    const [reviews, reviewCount] = await Promise.all([
+      prisma.productReview.findMany({
+        where: position ? { ...where, OR: [
+          { createdAt: { lt: position.createdAt } },
+          { createdAt: position.createdAt, id: { lt: position.id } },
+        ] } : where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: pageSize + 1, select: reviewSelection,
+      }),
+      prisma.productReview.count({ where }),
+    ]);
     let permission = "login";
     const user = await getUser();
     if (user && !user.guest) {
@@ -49,7 +52,7 @@ export async function GET(request, { params }) {
       permission = existing ? "written" : purchased ? "write" : "purchase";
     }
     return Response.json({
-      reviews: reviews.slice(0, pageSize), permission,
+      reviews: reviews.slice(0, pageSize), permission, reviewCount,
       nextCursor: reviews.length > pageSize ? reviews[pageSize - 1].id : null,
     }, { headers });
   } catch {

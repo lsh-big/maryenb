@@ -66,6 +66,7 @@ function CheckoutForm({ slug, quantity, direct }) {
   const errorRef = useRef(null);
   const submitting = useRef(false);
   const [config, setConfig] = useState(null);
+  const needsAccount = !user || (!config?.virtual && user.guest);
   const orderTotal = config?.shippingFee == null || subtotal == null ? null : subtotal + config.shippingFee;
   const [method, setMethod] = useState("");
   const [busy, setBusy] = useState(false);
@@ -173,7 +174,7 @@ function CheckoutForm({ slug, quantity, direct }) {
     {config?.virtual && <p className="payment-alert">가상 구매 체험 모드입니다. 실제 결제·배송은 발생하지 않습니다. 배송정보에는 예시 값을 입력해 주세요.</p>}
     {error && <p className="payment-alert" role="alert" tabIndex={-1} ref={errorRef}>{error}</p>}
     {pending && <div className="payment-alert"><p>주문번호: {pending}</p><p>결제창을 닫았거나 확인이 지연되면 결제 상태를 다시 확인해 주세요. 중복 결제하지 마세요.</p><button className="button" type="button" disabled={busy} onClick={async () => { setBusy(true); try { await confirm(pending); } catch (e) { setError(e.message); } finally { setBusy(false); } }}>결제 상태 다시 확인</button></div>}
-    {ready && config && items.length > 0 && <section className="checkout-mobile-summary" aria-labelledby="checkout-mobile-summary-title">
+    {ready && config && items.length > 0 && <section className={`checkout-mobile-summary${needsAccount && !loading ? " checkout-entry-summary" : ""}`} aria-labelledby="checkout-mobile-summary-title">
       <h2 id="checkout-mobile-summary-title">주문 요약</h2>
       <ul>{items.map(({ slug, name, quantity }) => <li key={slug}><span>{name}</span><strong>{quantity}개</strong></li>)}</ul>
       <dl>
@@ -181,14 +182,15 @@ function CheckoutForm({ slug, quantity, direct }) {
         <dd>{hasUnavailable ? "상품 확인 필요" : orderTotal == null ? "확인 중" : `${formatPrice(orderTotal)}원`}</dd>
       </dl>
     </section>}
-    {!ready || loading || !config ? !error && <p role="status">주문서를 불러오고 있습니다.</p> : !items.length ? <div className="cart-empty"><p>{direct ? "선택한 상품의 판매 상태와 수량을 확인해 주세요." : "장바구니에 상품을 담아 주세요."}</p><Link className="button button-dark" href={direct && /^[a-z0-9-]{1,100}$/.test(slug) ? `/products/${slug}` : "/#products"}>{direct ? "상품 다시 선택하기" : "세럼 둘러보기"}</Link></div> : (!user || (!config.virtual && user.guest)) ? (
+    {!ready || loading || !config ? !error && <p role="status">주문서를 불러오고 있습니다.</p> : !items.length ? <div className="cart-empty"><p>{direct ? "선택한 상품의 판매 상태와 수량을 확인해 주세요." : "장바구니에 상품을 담아 주세요."}</p><Link className="button button-dark" href={direct && /^[a-z0-9-]{1,100}$/.test(slug) ? `/products/${slug}` : "/#products"}>{direct ? "상품 다시 선택하기" : "세럼 둘러보기"}</Link></div> : needsAccount ? (
       <div className="checkout-entry">
         <h2>{config.virtual ? "어떻게 주문할까요?" : "로그인 후 주문할 수 있어요"}</h2>
         {config.virtual && <button className="button button-dark" type="button" disabled={busy} onClick={async () => {
           setBusy(true); setError("");
           try { await startGuest(); } catch (e) { setError(e.message); } finally { setBusy(false); }
         }}>비회원 가상 주문</button>}
-        <Link className="text-link" href={`/login?next=${encodeURIComponent(checkoutPath)}`}>로그인하고 계속하기</Link>
+        <Link className={config.virtual ? "text-link" : "button button-dark"} href={`/login?next=${encodeURIComponent(checkoutPath)}`}>로그인하고 계속하기</Link>
+        {!config.virtual && <p>로그인 후 같은 상품과 수량으로 주문을 계속할 수 있어요.</p>}
       </div>
     ) : <form ref={formRef} onSubmit={submit} className="checkout-layout">
       <div className="checkout-form"><h2>배송정보</h2>

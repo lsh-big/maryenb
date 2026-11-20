@@ -133,6 +133,13 @@ export function ProductCollection({ products }) {
   ));
 
   return <>
+    <section className="products-section" id="products" aria-labelledby="products-title">
+      <h2 id="products-title">피부 고민별 세럼 둘러보기</h2>
+      <div className="concern-filters" role="group" aria-label="피부 고민별 세럼 보기">{concerns.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}</div>
+      <p className="collection-count" role="status">{concerns.find((c) => c.id === filter)?.label} · {filtered.length}종</p>
+      <div className="product-grid">{filtered.map((p, index) => <ProductCard key={p.slug} product={p} index={index} />)}</div>
+    </section>
+
     <section className="one-bottle" id="one-bottle" tabIndex={-1} aria-labelledby="one-bottle-title">
       <h2 id="one-bottle-title">마리엔비의 한 병 루틴</h2>
       <p>고민과 사용 경험을 선택하면 공식 제품 안내에서 살펴볼 세럼을 보여드려요.</p>
@@ -150,13 +157,6 @@ export function ProductCollection({ products }) {
         </p>}
         <div className="candidate-grid">{candidates.map((p) => <SerumCandidate key={p.slug} product={p} sharedRoutine={sharedCandidateRoutine} />)}</div>
       </> : <a className="text-link" href="#compare">6종 전체 비교하기 →</a>)}
-    </section>
-
-    <section className="products-section" id="products">
-      <h2>세럼 6종 둘러보기</h2>
-      <div className="concern-filters" role="group" aria-label="피부 고민별 세럼 보기">{concerns.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}</div>
-      <p className="collection-count" role="status">{concerns.find((c) => c.id === filter)?.label} · {filtered.length}종</p>
-      <div className="product-grid">{filtered.map((p, index) => <ProductCard key={p.slug} product={p} index={index} />)}</div>
     </section>
 
     <section className="serum-comparison" id="compare" tabIndex={-1} aria-labelledby="compare-title"

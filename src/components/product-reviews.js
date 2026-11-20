@@ -18,14 +18,14 @@ async function fetchReviews(url, options) {
   return result;
 }
 
-export function ProductReviews({ slug, enabled }) {
+export function ProductReviews({ slug, onCountChange }) {
   return <section id="reviews" className="detail-chapter product-reviews" tabIndex={-1} aria-labelledby="reviews-title">
     <h2 id="reviews-title">구매 후기</h2>
-    {enabled ? <ReviewPanel slug={slug} /> : <p>결제가 확인된 회원은 상품에 별점과 사진 후기를 남길 수 있습니다.</p>}
+    <ReviewPanel slug={slug} onCountChange={onCountChange} />
   </section>;
 }
 
-function ReviewPanel({ slug }) {
+function ReviewPanel({ slug, onCountChange }) {
   const { user, loading } = useAuth();
   const userId = user?.id;
   const endpoint = `/api/reviews/${encodeURIComponent(slug)}`;
@@ -37,6 +37,9 @@ function ReviewPanel({ slug }) {
   const [openPhoto, setOpenPhoto] = useState(null);
   const photoDialog = useRef(null);
   const photoTrigger = useRef(null);
+  const reviewCount = data?.reviewCount ?? null;
+
+  useEffect(() => { onCountChange(reviewCount); }, [onCountChange, reviewCount]);
 
   useEffect(() => {
     if (loading) return;
@@ -62,7 +65,7 @@ function ReviewPanel({ slug }) {
     setFeedback("");
     try {
       const { review } = await fetchReviews(endpoint, { method: "POST", body: form });
-      setData((current) => ({ ...current, permission: "written", reviews: [review, ...current.reviews] }));
+      setData((current) => ({ ...current, permission: "written", reviewCount: current.reviewCount + 1, reviews: [review, ...current.reviews] }));
       setRating(0);
       setFeedback("후기가 등록되었습니다.");
     } catch (failure) {

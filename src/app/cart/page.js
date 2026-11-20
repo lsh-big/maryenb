@@ -8,14 +8,19 @@ import { ProductArt } from "../../components/product-art";
 import { useCart } from "../../components/cart-provider";
 import { formatPrice } from "../../lib/products";
 import { QuantitySelector } from "../../components/quantity-selector";
+import { useAuth } from "../../components/auth-provider";
 
 export default function CartPage() {
   const { items, subtotal, removeItem, updateQuantity, ready, hasUnavailable } = useCart();
+  const { user, loading } = useAuth();
 
-  const [shippingFee, setShippingFee] = useState(null);
+  const [checkout, setCheckout] = useState(null);
   useEffect(() => {
-    apiFetch("/api/checkout").then((response) => response.ok ? response.json() : {}).then((settings) => setShippingFee(settings.shippingFee ?? null)).catch(() => {});
+    apiFetch("/api/checkout").then((response) => response.ok ? response.json() : null).then(setCheckout).catch(() => {});
   }, []);
+  const shippingFee = checkout?.shippingFee ?? null;
+  const paymentLabels = checkout?.methods.filter(({ enabled }) => enabled).map(({ label }) => label).join(" · ");
+  const needsLogin = checkout && !checkout.virtual && !loading && (!user || user.guest);
 
   return (
     <section className="cart-shell">
@@ -76,11 +81,13 @@ export default function CartPage() {
             </div>
             <div><span>배송비</span><span>{shippingFee === null ? "주문서에서 확인" : `${formatPrice(shippingFee)}원`}</span></div>
             <div className="summary-total">
-              <strong>총 결제 금액</strong>
+              <strong>{checkout?.virtual ? "가상 주문 금액" : "총 결제 금액"}</strong>
               <strong>{subtotal == null || shippingFee == null ? "주문서에서 확인" : `${formatPrice(subtotal + shippingFee)}원`}</strong>
             </div>
             {hasUnavailable ? <p role="status">상품의 재고와 수량을 확인해 주세요.</p> : <Link className="button button-dark checkout-button" href="/checkout">주문서 작성하기</Link>}
-            <p className="checkout-note">네이버페이 · 카카오페이 · 토스페이 · KG이니시스<br />최종 금액과 재고는 결제 전에 다시 확인합니다.</p>
+            {(checkout?.virtual || needsLogin) && <p className="checkout-note">{checkout.virtual ? "로그인 없이 가상 주문을 체험할 수 있어요." : "로그인 후 장바구니 상품으로 주문을 계속할 수 있어요."}</p>}
+            {checkout && !checkout.virtual && paymentLabels && <p className="checkout-note">{paymentLabels}</p>}
+            <Link className="text-link" href="/policies#delivery">배송·교환·반품 정책</Link>
           </aside>
         </div>
       )}

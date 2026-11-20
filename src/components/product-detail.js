@@ -10,6 +10,7 @@ import { formatPrice } from "../lib/products";
 import { ProductArt } from "./product-art";
 import { QuantitySelector } from "./quantity-selector";
 import { apiFetch } from "../lib/client-api";
+import { useAuth } from "./auth-provider";
 import { ProductAdvantage } from "./product-advantage";
 import { ProductReviews } from "./product-reviews";
 import { SkinComparison } from "./skin-comparison";
@@ -18,21 +19,26 @@ import catalog from "../data/products.json";
 
 const azelaicPair = catalog.filter(({ code }) => code === "ANC5" || code === "ANC10");
 
-export function ProductDetail({ product: initialProduct, shippingFee, virtual, reviewsEnabled }) {
+export function ProductDetail({ product: initialProduct, delivery, virtual, reviewsEnabled }) {
   const [localProduct, setLocalProduct] = useState(null);
+  const [reviewCount, setReviewCount] = useState(null);
   const product = { ...initialProduct, ...localProduct };
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_PAGES_DEMO !== "true") return;
     apiFetch("/api/products").then((r) => r.json()).then((products) => setLocalProduct(products.find((p) => p.slug === initialProduct.slug) || { stock: 0, price: null, purchaseUnavailable: true })).catch(() => {});
   }, [initialProduct.slug]);
   const { addItem, items, ready } = useCart();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const inCart = items.find((item) => item.slug === product.slug)?.quantity || 0;
   const maxQuantity = Math.min(product.stock, 99);
   const available = product.stock > 0 && Number.isFinite(product.price) && product.price > 0 && !product.koreaSalesNote && !product.purchaseUnavailable;
   const canBuy = available;
   const availability = product.purchaseUnavailable ? "판매 준비 중" : product.stock < 1 ? "품절" : available ? "재고 있음" : "구매 준비 중";
-  const buyLabel = available ? "바로 구매하기" : availability;
+  const needsLogin = !virtual && !loading && (!user || user.guest);
+  const buyLabel = available ? needsLogin ? "로그인 후 구매" : "바로 구매하기" : availability;
+  const purchaseNote = virtual ? "로그인 없이 가상 주문을 체험할 수 있어요." :
+    needsLogin ? "로그인 후 선택한 상품과 수량으로 주문을 계속할 수 있어요." : null;
   function buyNow() {
     const selection = new URLSearchParams({ buy: product.slug, quantity: String(selectedQuantity) });
     router.push(`/checkout?${selection}`);
@@ -93,54 +99,51 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
           )}
         </div>
         <div className="detail-copy">
-          <p className="detail-code">{product.code} · {guide?.focus || product.category}</p>
+          <p className="detail-code">{product.code} · {product.volume}</p>
           <h1>{product.name}</h1>
           <p className="detail-intro">{guide ? guide.summary.split(". ")[0].replace(/\.$/, "") + "." : product.description}</p>
-          <p className="detail-volume">{product.volume} · {availability}</p>
-          <div className="detail-price">
-            <strong>
-              {product.price === null
-                ? formatPrice(product.price)
-                : `${formatPrice(product.price)}원`}
-            </strong>
-            {product.price != null && product.compareAtPrice > product.price && (
-              <del>{formatPrice(product.compareAtPrice)}원</del>
-            )}
+          {guide && <dl className="detail-quick-facts">
+            <div><dt>핵심 성분</dt><dd>{guide.focus}</dd></div>
+            <div><dt>처음 사용</dt><dd>{guide.timing} · {guide.frequency}</dd></div>
+            {guide.texture && <div><dt>제형</dt><dd>{guide.texture}</dd></div>}
+          </dl>}
+          <div className="detail-purchase">
+            <div className="detail-price">
+              <strong>{product.price == null ? formatPrice(null) : `${formatPrice(product.price)}원`}</strong>
+              {product.price != null && product.compareAtPrice > product.price && <del>{formatPrice(product.compareAtPrice)}원</del>}
+              <span className="detail-price-status">{virtual && available ? "가상 주문 가격" : availability}</span>
+            </div>
+            <div className="detail-purchase-links">
+              <span>배송비 {delivery.shipping}</span>
+              <a className="text-link" href="#detail-delivery" onClick={() => { document.getElementById("detail-delivery").open = true; }}>배송·교환·반품</a>
+              {reviewCount > 0 && <a className="text-link" href="#reviews">구매 후기 {reviewCount}개</a>}
+            </div>
+            {canBuy && <div className="detail-quantity">
+              <div><span>수량</span>{inCart > 0 && <small>장바구니에 {inCart}개 담겨 있어요</small>}</div>
+              <QuantitySelector value={selectedQuantity} onChange={(value) => { setQuantity(value); setAdded(false); }} max={maxQuantity} label={`${product.name} 수량`} />
+            </div>}
+            {canBuy && <div className="detail-selected-total" aria-live="polite">
+              <span>선택 상품 금액 · {selectedQuantity}개</span><strong>{formatPrice(product.price * selectedQuantity)}원</strong>
+            </div>}
+            <div className="detail-actions">
+              <button className="button detail-add" type="button" disabled={!canAdd} onClick={() => { if (addItem(product, selectedQuantity)) setAdded(true); }}>
+                <ShoppingBag size={17} /> 장바구니 담기
+              </button>
+              <button className="button button-dark detail-add" type="button" disabled={!canBuy} onClick={buyNow}>{buyLabel}</button>
+            </div>
+            {available && purchaseNote && <p className="detail-purchase-note">{purchaseNote}</p>}
+            {ready && available && !canAdd && <p className="stock-note">선택 수량을 더하면 장바구니에 담을 수 있는 재고를 초과합니다.</p>}
+            {added && <p className="stock-note" role="status">장바구니에 담았습니다. <Link href="/cart">장바구니 보기</Link></p>}
           </div>
-          {virtual && <p className="detail-shipping">가상 구매 시연 가격</p>}
-          {!virtual && shippingFee != null && <p className="detail-shipping">배송비 {shippingFee === 0 ? "무료" : `${formatPrice(shippingFee)}원`}</p>}
-          <a className="text-link" href="#detail-delivery" onClick={() => { document.getElementById("detail-delivery").open = true; }}>배송비·교환·반품 안내</a>
-          <div className="detail-quantity"><div><span>구매 수량</span><small>{inCart > 0 ? `장바구니에 ${inCart}개 담겨 있어요` : `최대 ${Math.min(product.stock, 99)}개 선택 가능`}</small></div><QuantitySelector value={selectedQuantity} onChange={(value) => { setQuantity(value); setAdded(false); }} max={maxQuantity} disabled={!canBuy} label={`${product.name} 수량`} /></div>
-          <div className="detail-selected-total" aria-live="polite"><span>선택 상품 금액 · {selectedQuantity}개</span><strong>{product.price === null ? "판매가 확인 중" : `${formatPrice(product.price * selectedQuantity)}원`}</strong></div>
-          <div className="detail-actions">
-            <button className="button detail-add" type="button" disabled={!canAdd} onClick={() => { if (addItem(product, selectedQuantity)) setAdded(true); }}>
-              <ShoppingBag size={17} /> 장바구니 담기
-            </button>
-            <button className="button button-dark detail-add" type="button" disabled={!canBuy} onClick={buyNow}>{buyLabel}</button>
-          </div>
-          {ready && available && !canAdd && <p className="stock-note">선택 수량을 더하면 장바구니에 담을 수 있는 재고를 초과합니다.</p>}
-          {added && <p className="stock-note" role="status">장바구니에 담았습니다. <Link href="/cart">장바구니 보기 →</Link></p>}
-          <nav className="detail-shortcuts" aria-label="상품 상세 바로가기">
+          {(guide || reviewsEnabled) && <nav className="detail-shortcuts" aria-label="상품 상세 바로가기">
             {guide?.texture && <a href="#texture">제형</a>}
             {guide && <a href="#ingredients">성분</a>}
             {guide && <a href="#usage">사용법</a>}
-            <a href="#reviews">후기</a>
-          </nav>
+            {reviewsEnabled && <a href="#reviews">후기</a>}
+          </nav>}
         </div>
       </div>
       <div className="detail-editorial">
-        {ranking && <section className="detail-ranking" aria-labelledby="detail-ranking-title">
-          <div className="detail-ranking-art" aria-hidden="true">
-            <Image src={ranking.image} alt="" fill sizes="(max-width: 560px) 170px, 250px" />
-          </div>
-          <div className="detail-ranking-copy">
-            <h2 id="detail-ranking-title">화해 {ranking.category} <strong>{ranking.rank}위</strong> 달성</h2>
-            <ul className="detail-ranking-ingredients" aria-label="주요 성분과 함량">
-              {guide.points.map(([amount, ingredient]) => <li key={ingredient}>{ingredient} {amount}</li>)}
-            </ul>
-            <p>메리엔비 홍보 이미지 기준 · 집계 시점 미표기</p>
-          </div>
-        </section>}
         {guide?.texture && <section id="texture" tabIndex={-1} className={`detail-chapter texture-chapter${textureDetails && texturePackage ? " texture-chapter-featured" : ""}`}>
           <div>
             <h2>텍스처와 사용감</h2>
@@ -155,6 +158,16 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
               alt={`${product.code} 제품 패키지`} sizes="(max-width: 560px) 68vw, 280px" />
             <figcaption>제품 패키지</figcaption>
           </figure>}
+        </section>}
+        {guide && <section className="detail-chapter" id="usage" tabIndex={-1}>
+          <h2>사용 순서와 주의사항</h2>
+          <dl className="routine-facts">
+            <div><dt>사용 시간</dt><dd>{guide.timing}</dd></div>
+            <div><dt>시작 빈도</dt><dd>{guide.frequency}</dd></div>
+            <div><dt>사용 순서</dt><dd>세안 → 세럼 → 보습제{product.code !== "RNT" && " → 낮에는 자외선 차단제"}</dd></div>
+          </dl>
+          <p>{guide.tip}</p><p>{guide.caution}</p>
+          <a className="text-link" href={guide.source} target="_blank" rel="noreferrer">공식 사용 안내</a>
         </section>}
         {guide && <section className="detail-chapter" id="ingredients" tabIndex={-1}>
           <h2>핵심 성분과 함량</h2>
@@ -177,15 +190,17 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
           <ProductAdvantage code={product.code} />
           <Link className="text-link detail-all-compare" href="/#compare">세럼 6종 비교 보기</Link>
         </section>
-        {guide && <section className="detail-chapter" id="usage" tabIndex={-1}>
-          <h2>사용 순서와 주의사항</h2>
-          <dl className="routine-facts">
-            <div><dt>사용 시간</dt><dd>{guide.timing}</dd></div>
-            <div><dt>시작 빈도</dt><dd>{guide.frequency}</dd></div>
-            <div><dt>사용 순서</dt><dd>세안 → 세럼 → 보습제{product.code !== "RNT" && " → 낮에는 자외선 차단제"}</dd></div>
-          </dl>
-          <p>{guide.tip}</p><p>{guide.caution}</p>
-          <a className="text-link" href={guide.source} target="_blank" rel="noreferrer">공식 사용 안내</a>
+        {ranking && <section className="detail-ranking" aria-labelledby="detail-ranking-title">
+          <div className="detail-ranking-art" aria-hidden="true">
+            <Image src={ranking.image} alt="" fill sizes="(max-width: 560px) 170px, 250px" />
+          </div>
+          <div className="detail-ranking-copy">
+            <h2 id="detail-ranking-title">화해 {ranking.category} <strong>{ranking.rank}위</strong> 달성</h2>
+            <ul className="detail-ranking-ingredients" aria-label="주요 성분과 함량">
+              {guide.points.map(([amount, ingredient]) => <li key={ingredient}>{ingredient} {amount}</li>)}
+            </ul>
+            <p>메리엔비 홍보 이미지 기준 · 집계 시점 미표기</p>
+          </div>
         </section>}
         <SkinComparison key={product.code} code={product.code} />
         <section className="product-faq detail-chapter">
@@ -203,12 +218,16 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
           </details>
           <details id="detail-delivery">
             <summary>배송·교환·반품</summary>
-            <p>{virtual ? "가상 주문의 배송비는 0원입니다." : "배송·교환·반품 조건은 판매 안내에서 확인할 수 있습니다."}</p>
-            <Link className="text-link" href="/support#order-delivery">고객지원 배송·교환 안내</Link>
+            <dl className="routine-facts">
+              <div><dt>배송비</dt><dd>{delivery.shipping}</dd></div>
+              <div><dt>발송 기준</dt><dd>{delivery.dispatch}</dd></div>
+              <div><dt>교환·반품</dt><dd>{delivery.returns}</dd></div>
+            </dl>
+            <Link className="text-link" href="/policies#delivery">배송·교환·반품 정책</Link>
           </details>
         </section>
       </div>
-      <ProductReviews key={product.slug} slug={product.slug} enabled={reviewsEnabled} />
+      {reviewsEnabled && <ProductReviews slug={product.slug} onCountChange={setReviewCount} />}
       <div className="detail-guide-navigation"><Link className="text-link" href="/#compare">6종 성분·사용법 비교하기 →</Link><Link className="text-link" href="/#routine">처음 시작하는 루틴 보기 →</Link></div>
       <div className="mobile-buy">
         <div><span>{product.price == null ? "판매가 확인 중" : `${selectedQuantity}개 상품 금액`}</span><strong>{product.price == null ? "가격 미정" : `${formatPrice(product.price * selectedQuantity)}원`}</strong></div>

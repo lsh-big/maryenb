@@ -3,7 +3,7 @@ import { ProductDetail } from "../../../components/product-detail";
 import { prisma } from "../../../lib/prisma";
 import { serializeProduct } from "../../../lib/products";
 import catalog from "../../../data/products.json";
-import { configuredShippingFee, publicStoreProduct } from "../../../lib/sales-config";
+import { deliveryTerms, publicStoreProduct } from "../../../lib/sales-config";
 import { isVirtualDatabase } from "../../../lib/database-mode";
 import { getVirtualProducts } from "../../../lib/virtual-db";
 
@@ -30,6 +30,6 @@ export default async function ProductPage({ params }) {
 
   if (!product) notFound();
 
-  return <ProductDetail product={serializeProduct(product)} virtual={virtual} shippingFee={configuredShippingFee()}
+  return <ProductDetail key={slug} product={serializeProduct(product)} virtual={virtual} delivery={deliveryTerms(virtual)}
     reviewsEnabled={!virtual && Number.isInteger(product.id)} />;
 }

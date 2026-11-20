@@ -2,8 +2,7 @@ import Link from "next/link";
 import catalog from "../../data/products.json";
 import { productGuides } from "../../data/product-guides";
 import { isVirtualDatabase } from "../../lib/database-mode";
-import { formatPrice } from "../../lib/products";
-import { configuredShippingFee } from "../../lib/sales-config";
+import { deliveryTerms } from "../../lib/sales-config";
 
 export const metadata = { title: "고객지원" };
 
@@ -33,10 +32,7 @@ function supportChannels() {
 
 export default function SupportPage() {
   const virtual = isVirtualDatabase();
-  const shippingFee = configuredShippingFee();
-  const shippingLabel = virtual ? "가상 주문 0원"
-    : shippingFee == null ? "판매 조건 확정 후 안내"
-    : shippingFee === 0 ? "무료" : `${formatPrice(shippingFee)}원`;
+  const delivery = deliveryTerms(virtual);
   const channels = supportChannels();
   const hours = process.env.SUPPORT_HOURS?.trim();
 
@@ -82,8 +78,8 @@ export default function SupportPage() {
     <section className="support-section" id="order-delivery" tabIndex={-1}>
       <h2>주문·배송</h2>
       <dl className="routine-facts support-facts">
-        <div><dt>배송비</dt><dd>{shippingLabel}</dd></div>
-        <div><dt>발송 기준</dt><dd>{virtual ? "가상 주문은 발송되지 않습니다." : "발송 일정은 확정 후 안내합니다."}</dd></div>
+        <div><dt>배송비</dt><dd>{delivery.shipping}</dd></div>
+        <div><dt>발송 기준</dt><dd>{delivery.dispatch}</dd></div>
       </dl>
       <p>주문한 계정으로 로그인하면 주문 내역을 확인할 수 있습니다. 실제 주문의 택배사와 송장번호는 판매자가 등록한 뒤 표시됩니다.</p>
       <div className="support-links">
@@ -94,7 +90,7 @@ export default function SupportPage() {
 
     <section className="support-section" id="returns" tabIndex={-1}>
       <h2>교환·반품</h2>
-      <p>접수 전에 주문번호와 대상 상품, 교환 또는 반품 사유를 준비해 주세요. 접수 방법과 비용은 판매 조건 확정 후 정책에서 안내합니다.</p>
+      <p>{delivery.returns}</p>
       <Link className="text-link" href="/policies#delivery">교환·반품 정책 보기</Link>
     </section>
 

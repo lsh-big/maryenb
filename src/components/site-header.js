@@ -53,7 +53,7 @@ export function SiteHeader() {
         <nav className="primary-nav" aria-label="주요 메뉴">
           <Link href="/#products">세럼</Link>
           <Link href="/#brand">브랜드</Link>
-          <Link className="nav-guide" href="/#one-bottle">한 병 루틴</Link>
+          <Link className="nav-guide" href="/#one-bottle">내 세럼 찾기</Link>
           <Link className="support-nav-link" href="/support">고객지원</Link>
           <Link className="orders-link-mobile" href="/orders">주문조회</Link>
         </nav>
