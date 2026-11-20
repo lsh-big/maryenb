@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { concerns, getRoutineCandidates } from "../data/product-guides";
 import { ProductCard } from "./product-card";
 import { ProductArt } from "./product-art";
@@ -155,9 +154,6 @@ export function ProductCollection({ products }) {
 
     <section className="products-section" id="products">
       <h2>세럼 6종 둘러보기</h2>
-      <Image className="collection-lineup" src="/images/homepage/mb-hero-lineup-20261015.jpg"
-        alt="VNC15, ANC5, ANC10, RNT, TNA5, NTZ20 세럼 라인업"
-        width={1800} height={1350} sizes="(max-width: 760px) 94vw, 1200px" />
       <div className="concern-filters" role="group" aria-label="피부 고민별 세럼 보기">{concerns.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}</div>
       <p className="collection-count" role="status">{concerns.find((c) => c.id === filter)?.label} · {filtered.length}종</p>
       <div className="product-grid">{filtered.map((p, index) => <ProductCard key={p.slug} product={p} index={index} />)}</div>

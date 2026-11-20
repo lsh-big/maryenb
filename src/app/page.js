@@ -36,27 +36,26 @@ export default async function HomePage() {
     }
   }
 
-  const featured = products.find((product) => product.isActive && product.isFeatured && product.imageUrl)
-    ?? catalog.find((product) => product.code === "ANC5");
-  const campaign = serializeProduct(featured);
-
   return (
     <>
-      <section className="hero campaign" style={{ "--campaign-accent": campaign.guide?.accent, "--campaign-wash": campaign.guide?.wash }}>
+      <section className="hero campaign">
         <div className="hero-copy">
-          <h1>내 피부 고민에 맞춰,<br /><em>세럼 한 병부터.</em></h1>
-          <p className="hero-description">마리엔비가 공개한 주요 성분과 함량으로 세럼 6종을 비교해 보세요.</p>
-          <div className="hero-actions">
-            <Link className="button button-dark" href="#one-bottle">내 세럼 찾기</Link>
-            <Link className="hero-secondary" href="#products">세럼 6종 보기</Link>
-          </div>
+          <h1>성분과 함량을 보고, <em>내 세럼을 고르세요.</em></h1>
+          <p className="hero-description">피부 고민에 맞춰 마리엔비 세럼 6종을 비교해 보세요.</p>
         </div>
         <div className="hero-visual" id="brand-film">
-          <Link className="campaign-product" href={`/products/${campaign.slug}`}>
-            <Image src={campaign.imageUrl} alt={`마리엔비 ${campaign.code} 세럼 정면`} fill priority sizes="(max-width: 760px) 84vw, 49vw" />
-            <span><strong>{campaign.code}</strong>{campaign.guide?.focus}<small>{campaign.volume}</small></span>
-          </Link>
+          <Image
+            src="/images/homepage/mb-hero-lineup-20261015.jpg"
+            alt="마리엔비 세럼 6종: VNC15, ANC5, ANC10, RNT, TNA5, NTZ20"
+            fill
+            priority
+            sizes="(max-width: 760px) calc(100vw - 32px), (max-width: 1360px) 57vw, 744px"
+          />
           <CampaignFilm />
+        </div>
+        <div className="hero-actions">
+          <Link className="button button-dark" href="#one-bottle">내 세럼 찾기</Link>
+          <Link className="hero-secondary" href="#compare">6종 성분 비교</Link>
         </div>
       </section>
       <div className="section-shell shop-flow">

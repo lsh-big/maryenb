@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -48,6 +49,7 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
   const [activeImage, setActiveImage] = useState(gallery[0]);
   const textureDetails = guide?.textureDetails;
   const texturePackage = gallery[1] || gallery[0];
+  const ranking = guide?.hwahaeRanking;
 
   return (
     <section className="detail-shell" style={{ "--product-accent": guide?.accent, "--product-wash": guide?.wash }}>
@@ -127,6 +129,18 @@ export function ProductDetail({ product: initialProduct, shippingFee, virtual, r
         </div>
       </div>
       <div className="detail-editorial">
+        {ranking && <section className="detail-ranking" aria-labelledby="detail-ranking-title">
+          <div className="detail-ranking-art" aria-hidden="true">
+            <Image src={ranking.image} alt="" fill sizes="(max-width: 560px) 170px, 250px" />
+          </div>
+          <div className="detail-ranking-copy">
+            <h2 id="detail-ranking-title">화해 {ranking.category} <strong>{ranking.rank}위</strong> 달성</h2>
+            <ul className="detail-ranking-ingredients" aria-label="주요 성분과 함량">
+              {guide.points.map(([amount, ingredient]) => <li key={ingredient}>{ingredient} {amount}</li>)}
+            </ul>
+            <p>메리엔비 홍보 이미지 기준 · 집계 시점 미표기</p>
+          </div>
+        </section>}
         {guide?.texture && <section id="texture" tabIndex={-1} className={`detail-chapter texture-chapter${textureDetails && texturePackage ? " texture-chapter-featured" : ""}`}>
           <div>
             <h2>텍스처와 사용감</h2>
