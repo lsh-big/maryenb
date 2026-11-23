@@ -21,10 +21,11 @@ async function main() {
   });
 
   for (const product of products) {
+    const { price, compareAtPrice, bundlePrices, stock, ...catalogDetails } = product;
     await prisma.product.upsert({
       where: { slug: product.slug },
-      update: product,
-      create: product,
+      update: product.koreaSalesNote ? { ...catalogDetails, price, compareAtPrice } : catalogDetails,
+      create: { ...catalogDetails, price, compareAtPrice, bundlePrices, stock },
     });
   }
   console.log(`Seeded ${products.length} MaryenB products.`);

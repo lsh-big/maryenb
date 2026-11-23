@@ -10,9 +10,13 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [demoAdminEnabled, setDemoAdminEnabled] = useState(false);
   const router = useRouter();
   useEffect(() => {
-    apiFetch("/api/auth", { cache: "no-store" }).then((r) => r.json()).then((data) => setUser(data.user)).catch(() => setUser(null)).finally(() => setLoading(false));
+    apiFetch("/api/auth", { cache: "no-store" }).then((r) => r.json()).then((data) => {
+      setUser(data.user);
+      setDemoAdminEnabled(data.demoAdminEnabled === true);
+    }).catch(() => setUser(null)).finally(() => setLoading(false));
   }, []);
   async function startGuest() {
     const response = await apiFetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "guest" }) });
@@ -24,7 +28,7 @@ export function AuthProvider({ children }) {
     const response = await apiFetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "logout" }) });
     if (response.ok) { setUser(null); router.push("/"); router.refresh(); }
   }
-  return <AuthContext.Provider value={{ user, loading, signOut, startGuest }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, demoAdminEnabled, signOut, startGuest }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() { return useContext(AuthContext); }

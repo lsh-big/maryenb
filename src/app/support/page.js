@@ -3,6 +3,7 @@ import catalog from "../../data/products.json";
 import { productGuides } from "../../data/product-guides";
 import { isVirtualDatabase } from "../../lib/database-mode";
 import { deliveryTerms } from "../../lib/sales-config";
+import { overseasOnly } from "../../lib/product-market";
 
 export const metadata = { title: "고객지원" };
 
@@ -47,8 +48,13 @@ export default function SupportPage() {
       <h2>상품·사용법</h2>
       <div className="support-faq">
         <details>
+          <summary>국내에서 어떤 세럼과 용량을 구매할 수 있나요?</summary>
+          <p>국내 판매 세럼은 RNT·TNA5·NTZ20이며 각각 30ml와 60ml로 판매합니다. VNC15·ANC5·ANC10은 해외 전용으로 국내에서 판매하지 않습니다.</p>
+          <Link className="text-link" href="/#products">국내 판매 세럼 보기</Link>
+        </details>
+        <details>
           <summary>ANC5와 ANC10은 어떻게 다른가요?</summary>
-          <p>두 제품은 같은 아젤라익애씨드를 서로 다른 함량으로 담았습니다. 한 제품씩 소량으로 시작하고 제품별 사용 안내를 확인하세요.</p>
+          <p>두 제품은 해외 전용입니다. 같은 아젤라익애씨드를 서로 다른 함량으로 담았으며, 상세에서 제품별 사용 안내를 확인할 수 있습니다.</p>
           <div className="support-links">
             {ancPair.map(({ code, slug }) => <Link key={code} className="text-link" href={`/products/${slug}`}>
               {code} · {productGuides[code].focus}
@@ -63,10 +69,11 @@ export default function SupportPage() {
         <details>
           <summary>제품별 사용 시간과 시작 횟수는 어떻게 되나요?</summary>
           <ul className="support-usage">
-            {guidedProducts.map(({ code, slug }) => {
+            {guidedProducts.map((product) => {
+              const { code, slug } = product;
               const { focus, timing, frequency } = productGuides[code];
               return <li key={code}>
-                <Link className="text-link" href={`/products/${slug}`}>{code} · {focus}</Link>
+                <Link className="text-link" href={`/products/${slug}`}>{code} · {focus}{overseasOnly(product) && " · 해외 전용"}</Link>
                 <p>{timing} · {frequency}</p>
               </li>;
             })}

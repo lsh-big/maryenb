@@ -2,6 +2,7 @@ import { getUser } from "../../../../lib/auth";
 import { isVirtualDatabase } from "../../../../lib/database-mode";
 import { lockOrder } from "../../../../lib/payment-lifecycle";
 import { prisma } from "../../../../lib/prisma";
+import { familyCode } from "../../../../lib/product-market";
 import { hasSameOrigin } from "../../../../lib/request-origin";
 import { readReview, ReviewInputError } from "../../../../lib/review-upload";
 import { reviewableOrder, reviewPurchaseFilter, reviewSelection, validReviewId } from "../../../../lib/reviews";
@@ -14,7 +15,15 @@ const available = () => !isVirtualDatabase() && Boolean(process.env.DATABASE_URL
 async function getProduct(params, active = true) {
   const { slug } = await params;
   if (!/^[a-z0-9-]{1,100}$/.test(slug)) return null;
-  return prisma.product.findUnique({ where: { slug, ...(active && { isActive: true }) }, select: { id: true } });
+  const product = await prisma.product.findUnique({
+    where: { slug, ...(active && { isActive: true }) }, select: { id: true, code: true },
+  });
+  if (!product) return null;
+  const code = familyCode(product.code);
+  const family = await prisma.product.findMany({
+    where: { code: { in: [code, `${code}-60ML`] } }, select: { id: true, code: true },
+  });
+  return { id: family.find((item) => item.code === code)?.id ?? product.id, purchaseIds: family.map(({ id }) => id) };
 }
 
 export async function GET(request, { params }) {
@@ -47,7 +56,7 @@ export async function GET(request, { params }) {
         where: { productId_ownerId: { productId: product.id, ownerId: user.id } }, select: { id: true },
       });
       const purchased = !existing && await prisma.order.findFirst({
-        where: reviewPurchaseFilter(product.id, user.id), select: { id: true },
+        where: reviewPurchaseFilter(product.purchaseIds, user.id), select: { id: true },
       });
       permission = existing ? "written" : purchased ? "write" : "purchase";
     }
@@ -68,7 +77,7 @@ export async function POST(request, { params }) {
     if (!user || user.guest) return failure("구매한 회원 계정으로 로그인해 주세요.", 401);
     const product = await getProduct(params);
     if (!product) return failure("상품을 찾을 수 없습니다.", 404);
-    const purchase = reviewPurchaseFilter(product.id, user.id);
+    const purchase = reviewPurchaseFilter(product.purchaseIds, user.id);
     const order = await prisma.order.findFirst({
       where: purchase, orderBy: { id: "desc" }, select: { orderNumber: true },
     });

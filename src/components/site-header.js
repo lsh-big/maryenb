@@ -51,7 +51,7 @@ export function SiteHeader() {
     <header ref={headerRef} className="site-header" data-scroll-hidden={hideOnScroll ? "" : undefined}>
       <div className="header-inner">
         <nav className="primary-nav" aria-label="주요 메뉴">
-          <Link href="/#products">세럼</Link>
+          <Link href="/#products">국내 판매 세럼</Link>
           <Link href="/#brand">브랜드</Link>
           <Link className="nav-guide" href="/#one-bottle">내 세럼 찾기</Link>
           <Link className="support-nav-link" href="/support">고객지원</Link>

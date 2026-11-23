@@ -6,11 +6,10 @@ import { concerns, getRoutineCandidates } from "../data/product-guides";
 import { ProductCard } from "./product-card";
 import { ProductArt } from "./product-art";
 import { apiFetch } from "../lib/client-api";
-import { formatPrice } from "../lib/products";
+import { familyCode, overseasOnly, sizeLabel } from "../lib/product-market";
+import catalog from "../data/products.json";
 
 const emptyAnswers = { concern: "", experience: "" };
-const routineConcerns = [...concerns.slice(1), { id: "unsure", label: "아직 모르겠어요" }];
-
 const experiences = [
   { id: "new", label: "처음이거나 오랜만이에요" },
   { id: "used", label: "사용해 본 적 있어요" },
@@ -49,7 +48,8 @@ function SerumFacts({ product, sharedRoutine = false }) {
         <div><dt>사용 시간</dt><dd>{guide.timing}</dd></div>
         <div><dt>시작 빈도</dt><dd>{guide.frequency}</dd></div>
       </>}
-      <div><dt>판매가</dt><dd>{product.price == null ? formatPrice(null) : `${formatPrice(product.price)}원`}</dd></div>
+      <div><dt>판매 지역</dt><dd>{overseasOnly(product) ? "해외 전용 · 국내 판매 제외" : "국내 판매"}</dd></div>
+      {!overseasOnly(product) && <div><dt>용량</dt><dd>{product.sizeLabels.join(" / ")}</dd></div>}
     </dl>
     <Link className="text-link" href={`/products/${product.slug}`} aria-label={`${product.code} 상세 보기`}>상세 보기</Link>
   </article>;
@@ -71,7 +71,7 @@ function SerumCandidate({ product, sharedRoutine }) {
     <p className="candidate-reason">{summary}</p>
     {!sharedRoutine && <p className="candidate-usage">{guide.timing} · {guide.frequency}</p>}
     <div className="candidate-action">
-      <strong>{product.price == null ? formatPrice(null) : `${formatPrice(product.price)}원`}</strong>
+      <strong>{product.sizeLabels.join(" / ")}</strong>
       <Link className="button button-dark" href={`/products/${product.slug}`} aria-label={`${product.code} 상세 보기`}>상세 보기</Link>
     </div>
   </article>;
@@ -110,13 +110,20 @@ export function ProductCollection({ products }) {
     apiFetch("/api/products").then((r) => r.ok ? r.json() : null).then(setInventory).catch(() => {});
   }, []);
 
-  const currentProducts = inventory ? products.flatMap((product) => {
+  const currentProducts = (inventory ? products.flatMap((product) => {
     const current = inventory.find((p) => p.slug === product.slug);
     return current ? [{ ...product, ...current }] : [];
-  }) : products;
+  }) : products).filter(({ code }) => familyCode(code) === code).map((product) => ({
+    ...product,
+    sizeLabels: catalog.filter(({ code }) => familyCode(code) === product.code).map(sizeLabel),
+  }));
   const filtered = currentProducts.filter((p) => filter === "all" || p.guide?.concerns.includes(filter));
+  const domestic = filtered.filter((product) => !overseasOnly(product));
+  const overseas = filtered.filter(overseasOnly);
   const guided = currentProducts.filter((p) => p.guide);
-  const candidates = getRoutineCandidates(guided, concern, experience);
+  const domesticGuides = guided.filter((product) => !overseasOnly(product));
+  const routineConcerns = concerns.filter(({ id }) => domesticGuides.some(({ guide }) => guide.concerns[0] === id));
+  const candidates = getRoutineCandidates(domesticGuides, concern, experience);
   const firstCandidateGuide = candidates[0]?.guide;
   const sharedCandidateRoutine = candidates.length > 1 && candidates.every(({ guide }) =>
     guide.timing === firstCandidateGuide.timing && guide.frequency === firstCandidateGuide.frequency);
@@ -127,22 +134,30 @@ export function ProductCollection({ products }) {
   const hasAncPair = ancPair.length === 2;
   const sharedRoutine = hasAncPair && ancPair[0].guide.timing === ancPair[1].guide.timing
     && ancPair[0].guide.frequency === ancPair[1].guide.frequency;
-  const otherProducts = hasAncPair ? comparison.filter((product) => !ancPair.includes(product)) : comparison;
+  const domesticComparison = comparison.filter((product) => !overseasOnly(product));
+  const overseasComparison = comparison.filter((product) => overseasOnly(product) && (!hasAncPair || !ancPair.includes(product)));
   const matchingNiacinamide = guided.filter(({ guide }) => guide.points.some(
     ([amount, ingredient]) => ingredient === "나이아신아마이드" && amount === niacinamideLevel,
   ));
 
   return <>
     <section className="products-section" id="products" aria-labelledby="products-title">
-      <h2 id="products-title">피부 고민별 세럼 둘러보기</h2>
+      <h2 id="products-title">국내 판매 세럼</h2>
+      <p className="market-intro">RNT·TNA5·NTZ20은 각각 30ml와 60ml로 판매됩니다.</p>
       <div className="concern-filters" role="group" aria-label="피부 고민별 세럼 보기">{concerns.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)}>{item.label}</button>)}</div>
-      <p className="collection-count" role="status">{concerns.find((c) => c.id === filter)?.label} · {filtered.length}종</p>
-      <div className="product-grid">{filtered.map((p, index) => <ProductCard key={p.slug} product={p} index={index} />)}</div>
+      <p className="collection-count" role="status">국내 {domestic.length}종 · 해외 전용 {overseas.length}종</p>
+      {domestic.length ? <div className="product-grid">{domestic.map((p, index) => <ProductCard key={p.slug} product={p} index={index} />)}</div>
+        : <p className="market-intro">선택한 피부 고민에 해당하는 국내 판매 세럼이 없습니다.</p>}
+      {overseas.length > 0 && <section className="overseas-lineup" id="overseas-products" aria-labelledby="overseas-title">
+        <h3 id="overseas-title">해외 전용 세럼</h3>
+        <p className="market-intro">VNC15·ANC5·ANC10은 해외 전용으로 국내에서 판매하지 않습니다.</p>
+        <div className="product-grid">{overseas.map((p, index) => <ProductCard key={p.slug} product={p} index={index} detailLabel="제품 정보 보기" />)}</div>
+      </section>}
     </section>
 
     <section className="one-bottle" id="one-bottle" tabIndex={-1} aria-labelledby="one-bottle-title">
       <h2 id="one-bottle-title">마리엔비의 한 병 루틴</h2>
-      <p>고민과 사용 경험을 선택하면 공식 제품 안내에서 살펴볼 세럼을 보여드려요.</p>
+      <p>피부 고민과 사용 경험에 맞춰 국내 판매 세럼을 살펴보세요.</p>
       <Options name="routine-concern" label="가장 신경 쓰이는 피부 고민" options={routineConcerns} selection={concern} onChange={(value) => updateAnswer("concern", value)} />
       <Options name="routine-experience" label="액티브 세럼 사용 경험" options={experiences} selection={experience} onChange={(value) => updateAnswer("experience", value)} />
       <button className="button routine-reset" type="button" onClick={() => setAnswers(emptyAnswers)}>초기화</button>
@@ -161,7 +176,7 @@ export function ProductCollection({ products }) {
 
     <section className="serum-comparison" id="compare" tabIndex={-1} aria-labelledby="compare-title"
       onFocus={(event) => { if (event.target === event.currentTarget) setComparisonTab("all"); }}>
-      <h2 id="compare-title">6종 성분·사용법 비교</h2>
+      <h2 id="compare-title">국내·해외 세럼 성분 비교</h2>
       <div className="concern-filters comparison-tabs" role="tablist" aria-label="세럼 비교 방식" onKeyDown={moveComparisonTab}>
         {comparisonTabs.map(({ id, label }) => (
           <button key={id} type="button" role="tab" id={`compare-tab-${id}`} aria-controls={`compare-panel-${id}`}
@@ -170,13 +185,16 @@ export function ProductCollection({ products }) {
         ))}
       </div>
       <div role="tabpanel" id="compare-panel-all" aria-labelledby="compare-tab-all" tabIndex={0} hidden={comparisonTab !== "all"}>
+        <h3 className="market-compare-title">국내 판매</h3>
+        <div className="serum-facts-grid">{domesticComparison.map((p) => <SerumFacts key={p.slug} product={p} />)}</div>
+        <h3 className="market-compare-title">해외 전용</h3>
         {hasAncPair && <section className="anc-comparison" aria-labelledby="anc-comparison-title">
           <h3 id="anc-comparison-title">ANC5와 ANC10 나란히 보기</h3>
           {sharedRoutine && <p>공통 안내 · 사용 시간은 {ancPair[0].guide.timing}. 첫 사용은 {ancPair[0].guide.frequency} 시작하세요.</p>}
           <div className="serum-facts-grid">{ancPair.map((p) => <SerumFacts key={p.slug} product={p} sharedRoutine={sharedRoutine} />)}</div>
           <p className="guide-footnote">병풀 추출물 함량은 웹 안내와 제공 라벨이 달라 실제 포장의 최신 표시를 확인해 주세요.</p>
         </section>}
-        <div className="serum-facts-grid">{otherProducts.map((p) => <SerumFacts key={p.slug} product={p} />)}</div>
+        <div className="serum-facts-grid">{overseasComparison.map((p) => <SerumFacts key={p.slug} product={p} />)}</div>
       </div>
       <div role="tabpanel" id="compare-panel-niacinamide" aria-labelledby="compare-tab-niacinamide"
         tabIndex={0} hidden={comparisonTab !== "niacinamide"}>

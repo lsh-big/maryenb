@@ -5,8 +5,8 @@ export const reviewableOrder = {
 
 export const validReviewId = (id) => typeof id === "string" && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id);
 
-export function reviewPurchaseFilter(productId, ownerId) {
-  return { ...reviewableOrder, ownerId, items: { some: { productId } } };
+export function reviewPurchaseFilter(productIds, ownerId) {
+  return { ...reviewableOrder, ownerId, items: { some: { productId: { in: productIds } } } };
 }
 
 export const reviewSelection = {

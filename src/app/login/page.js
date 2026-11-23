@@ -4,12 +4,15 @@ import { apiFetch, withBasePath } from "../../lib/client-api";
 
 import Link from "next/link";
 import { useState } from "react";
+import { useAuth } from "../../components/auth-provider";
 
 export default function LoginPage() {
   const [signup, setSignup] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [guestEnabled, setGuestEnabled] = useState(true);
+  const { demoAdminEnabled } = useAuth();
+  const adminLogin = !signup && demoAdminEnabled;
 
   async function submit(event, action) {
     event?.preventDefault();
@@ -30,8 +33,8 @@ export default function LoginPage() {
     {error && <p className="payment-alert" role="alert">{error}</p>}
     <form className="auth-form" onSubmit={(event) => submit(event, signup ? "signup" : "login")}>
       {signup && <label>이름<input name="name" autoComplete="name" maxLength={40} required /></label>}
-      <label>이메일<input name="email" type="email" autoComplete="email" maxLength={200} required /></label>
-      <label>비밀번호<input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} minLength={8} maxLength={128} required /><small>8자 이상 입력해 주세요.</small></label>
+      <label>{adminLogin ? "이메일 또는 관리자 아이디" : "이메일"}<input name="email" type={adminLogin ? "text" : "email"} autoComplete={adminLogin ? "username" : "email"} maxLength={200} required /></label>
+      <label>비밀번호<input name="password" type="password" autoComplete={signup ? "new-password" : "current-password"} minLength={adminLogin ? undefined : 8} maxLength={128} required />{!adminLogin && <small>8자 이상 입력해 주세요.</small>}</label>
       {signup && <label className="auth-agreement"><input name="consent" type="checkbox" required /> 시연용 계정의 이름·이메일 저장에 동의합니다. 실제 사용하는 비밀번호는 입력하지 마세요.</label>}
       <button className="button button-dark" disabled={busy}>{busy ? "처리 중…" : signup ? "가입하고 시작하기" : "로그인"}</button>
     </form>

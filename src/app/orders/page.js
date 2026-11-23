@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/client-api";
 import { formatPrice } from "../../lib/products";
+import { orderStatusLabel } from "../../lib/order-status";
 
-const labels = {
-  SIMULATED: "가상 주문 완료", PENDING: "결제 확인 중", PAID: "결제 완료", PREPARING: "발송 준비 중",
-  SHIPPED: "발송 완료", DELIVERED: "배송 완료", CANCELLED: "주문 종료", REFUNDED: "환불 완료",
-  PAYMENT_REVIEW: "결제 확인 필요", REFUND_PENDING: "환불 확인 중",
-};
+function managePath(number, path = "/api/orders/manage") {
+  return number ? `${path}?${new URLSearchParams({ number })}` : path;
+}
 
 async function readOrders(path) {
   const response = await apiFetch(path, { cache: "no-store" });
@@ -23,21 +22,42 @@ export default function OrdersPage() {
   const [error, setError] = useState("");
   const [manage, setManage] = useState(false);
   const [number, setNumber] = useState("");
+  const [appliedNumber, setAppliedNumber] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     readOrders("/api/orders").then(setData).catch((failure) => setError(failure.message));
   }, []);
 
-  const path = number ? `/api/orders/manage?number=${encodeURIComponent(number)}` : "/api/orders/manage";
-
-  async function load(nextPath, nextManage = manage) {
+  async function load(nextManage, search = "") {
     setBusy(true);
     setError("");
     try {
-      const result = await readOrders(nextPath);
+      const result = await readOrders(nextManage ? managePath(search) : "/api/orders");
       setData(result);
       setManage(nextManage);
+      setAppliedNumber(search);
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadOrders() {
+    setBusy(true);
+    setError("");
+    try {
+      const response = await apiFetch(managePath(appliedNumber, "/api/orders/manage/export"), { cache: "no-store" });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "주문 내역을 엑셀로 내려받지 못했습니다.");
+      const file = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = file;
+      link.download = response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ?? "maryenb-orders.xlsx";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(file), 1000);
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -59,7 +79,7 @@ export default function OrdersPage() {
         body: JSON.stringify({ paymentId: order.orderNumber, action, carrier: fields.get("carrier"), trackingNumber: fields.get("trackingNumber") }),
       });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "주문 처리를 확인해 주세요.");
-      setData(await readOrders(path));
+      setData(await readOrders(managePath(appliedNumber)));
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -88,19 +108,20 @@ export default function OrdersPage() {
     <h1>{manage ? "판매자 주문 관리" : "주문·배송 조회"}</h1>
     {error && <p className="payment-alert" role="alert">{error}</p>}
     {data?.loginRequired && <Link className="button button-dark" href="/login?next=%2Forders">로그인 후 주문 조회</Link>}
-    {data?.canManage && <button className="button button-dark" type="button" disabled={busy} onClick={() => load(path, true)}>판매자 주문 관리</button>}
-    {manage && <form className="order-search" onSubmit={(event) => { event.preventDefault(); load(path); }}>
+    {data?.canManage && <button className="button button-dark" type="button" disabled={busy} onClick={() => load(true)}>판매자 주문 관리</button>}
+    {manage && <form className="order-search" onSubmit={(event) => { event.preventDefault(); load(true, number); }}>
       <label>주문번호 <input value={number} onChange={(event) => setNumber(event.target.value.trim())} /></label>
       <button className="button" disabled={busy}>조회</button>
-      <button className="button" type="button" disabled={busy} onClick={() => { setNumber(""); load("/api/orders/manage"); }}>최근 주문</button>
-      <button className="button" type="button" disabled={busy} onClick={() => load("/api/orders", false)}>내 주문</button>
+      <button className="button" type="button" disabled={busy} onClick={() => { setNumber(""); load(true); }}>최근 주문</button>
+      <button className="button" type="button" disabled={busy} onClick={downloadOrders}>{appliedNumber ? "검색 결과 엑셀 다운로드" : "전체 주문 엑셀 다운로드"}</button>
+      <button className="button" type="button" disabled={busy} onClick={() => { setNumber(""); load(false); }}>내 주문</button>
     </form>}
     {!data && !error && <p role="status">주문 내역을 불러오고 있습니다.</p>}
     {data?.orders?.length === 0 && <p>조회할 주문이 없습니다.</p>}
     {data?.orders?.map((order) => {
       const canShip = ["PAID", "PREPARING"].includes(order.status) && !order.paymentIssue;
       return <article className="order-history-card" key={order.orderNumber}>
-        <h2>{order.paymentIssue ? "결제 확인 필요" : labels[order.status] || order.status}</h2>
+        <h2>{orderStatusLabel(order)}</h2>
         <p>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: "Asia/Seoul" }).format(new Date(order.createdAt))} · {order.orderNumber}</p>
         <ul>{order.items.map((item, index) => <li key={index}>{item.name} × {item.quantity}</li>)}</ul>
         <strong>{formatPrice(order.total)}원</strong>
@@ -109,7 +130,7 @@ export default function OrdersPage() {
         {!manage && ["PENDING", "REFUND_PENDING"].includes(order.status) && <div className="order-actions">
           <button className="button" type="button" disabled={busy} onClick={() => checkCustomerPayment(order)}>결제 상태 다시 확인</button>
         </div>}
-        {manage && <form className="order-actions" onSubmit={(event) => operate(event, order)}>
+        {manage && order.status !== "SIMULATED" && <form className="order-actions" onSubmit={(event) => operate(event, order)}>
           {canShip && <div className="order-search">
             <label>택배사 <input name="carrier" maxLength={40} /></label>
             <label>송장번호 <input name="trackingNumber" maxLength={40} /></label>

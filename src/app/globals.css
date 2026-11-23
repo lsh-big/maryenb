@@ -895,3 +895,21 @@ button:disabled { cursor:not-allowed; opacity:.5; }
   .detail-thumbnails { margin-top:6px; }
   .detail-copy { padding-top:12px; }
 }
+
+.market-intro { margin:10px 0 18px; color:var(--muted); line-height:1.55; }
+.overseas-lineup { margin-top:clamp(32px,6vw,64px); padding-top:24px; border-top:1px solid var(--line); }
+.overseas-lineup h3,.market-compare-title { margin:0; font-size:clamp(1.25rem,2.5vw,1.6rem); }
+.market-compare-title { margin:24px 0 12px; }
+.detail-sizes { min-width:0; margin:0 0 14px; padding:0; border:0; }
+.detail-sizes legend { margin-bottom:8px; font-size:.9375rem; font-weight:700; }
+.detail-sizes .concern-filters { margin:0; }
+.detail-market-note { margin:0 0 14px; color:var(--muted); line-height:1.5; }
+.detail-bundle-options { min-width:0; margin:14px 0 0; padding:0; border:0; }
+.detail-bundle-options legend { margin-bottom:8px; font-size:.9375rem; font-weight:700; }
+.detail-bundle-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.detail-bundle-grid button { display:grid; gap:4px; justify-items:start; min-width:0; padding:9px 6px; border:1px solid var(--line); border-radius:8px; background:white; color:inherit; font:inherit; cursor:pointer; }
+.detail-bundle-grid button[aria-pressed="true"] { border-color:var(--product-accent,#864b5e); background:var(--product-wash,#fff6f8); }
+.detail-bundle-grid button:disabled { opacity:.5; cursor:default; }
+.detail-bundle-grid small { color:var(--muted); font-size:.75rem; }
+.detail-bundle-note { margin:8px 0 0; color:var(--muted); font-size:.875rem; }
+.detail-bundle-grid b { color:var(--product-accent,#864b5e); }

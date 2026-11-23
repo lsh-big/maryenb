@@ -1,3 +1,5 @@
+import { localMarketProduct } from "./product-market.js";
+
 export function configuredShippingFee() {
   const value = process.env.SHIPPING_FEE || "";
   const amount = Number(value);
@@ -20,7 +22,8 @@ export function deliveryTerms(virtual) {
 }
 
 export function publicStoreProduct(product) {
-  return catalogConfirmed() ? product : {
-    ...product, price: null, compareAtPrice: null, stock: 0, purchaseUnavailable: true,
-  };
+  return catalogConfirmed() ? localMarketProduct(product) : localMarketProduct({
+    ...product, price: null, compareAtPrice: null, ...(product.bundlePrices && { bundlePrices: [] }),
+    stock: 0, purchaseUnavailable: true,
+  });
 }

@@ -4,15 +4,18 @@ import { isOrderOperator, manageOrder, orderForCustomer } from "../../../../lib/
 import { validPaymentId } from "../../../../lib/payment-lifecycle";
 import { prisma } from "../../../../lib/prisma";
 import { hasSameOrigin } from "../../../../lib/request-origin";
+import { isLocalDemoAdmin } from "../../../../lib/local-demo-admin";
+import { getVirtualManagedOrders, validVirtualOrderNumber } from "../../../../lib/virtual-db";
 
 const headers = { "Cache-Control": "private, no-store" };
 
 export async function GET(request) {
-  if (isVirtualDatabase()) return new Response(null, { status: 404, headers });
+  const virtual = isVirtualDatabase();
   const user = await getUser();
-  if (!isOrderOperator(user)) return new Response(null, { status: 404, headers });
+  if (virtual ? !isLocalDemoAdmin(request, user) : !isOrderOperator(user)) return new Response(null, { status: 404, headers });
   const search = new URL(request.url).searchParams.get("number");
-  if (search && !validPaymentId(search)) return Response.json({ error: "주문번호를 확인해 주세요." }, { status: 400, headers });
+  if (search && !(virtual ? validVirtualOrderNumber(search) : validPaymentId(search))) return Response.json({ error: "주문번호를 확인해 주세요." }, { status: 400, headers });
+  if (virtual) return Response.json({ orders: (await getVirtualManagedOrders(search, 50)).map(orderForCustomer) }, { headers });
   const orders = await prisma.order.findMany({
     where: search ? { orderNumber: search } : undefined,
     orderBy: { createdAt: "desc" }, take: 50, include: { items: true },

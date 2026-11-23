@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { authenticate, getUser, logout } from "../../../lib/auth";
 import { isVirtualDatabase } from "../../../lib/database-mode";
+import { localDemoAdminAvailable } from "../../../lib/local-demo-admin";
 import { hasSameOrigin, shopOrigin } from "../../../lib/request-origin";
 
-export async function GET() {
-  return NextResponse.json({ user: await getUser(), guestEnabled: isVirtualDatabase() }, { headers: { "Cache-Control": "no-store" } });
+export async function GET(request) {
+  return NextResponse.json({
+    user: await getUser(), guestEnabled: isVirtualDatabase(), demoAdminEnabled: localDemoAdminAvailable(request),
+  }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request) {
@@ -23,7 +26,7 @@ export async function POST(request) {
       const existing = await getUser();
       if (existing) return NextResponse.json({ user: existing });
     }
-    const session = await authenticate(action, input);
+    const session = await authenticate(action, input, localDemoAdminAvailable(request));
     const response = NextResponse.json({ user: session.user });
     response.cookies.set("maryenb-session", session.token, { httpOnly: true, sameSite: "lax", secure: new URL(shopOrigin(request)).protocol === "https:", path: "/", maxAge: session.maxAge });
     return response;

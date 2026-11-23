@@ -27,7 +27,7 @@ export default async function HomePage() {
       const databaseProducts = await prisma.product.findMany({
         where: { isActive: true },
         orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
-        take: 8,
+        take: 24,
       });
       products = databaseProducts.map(publicStoreProduct);
     } catch (error) {
@@ -41,7 +41,7 @@ export default async function HomePage() {
       <section className="hero campaign">
         <div className="hero-copy">
           <h1>성분과 함량을 보고, <em>내 세럼을 고르세요.</em></h1>
-          <p className="hero-description">피부 고민에 맞춰 마리엔비 세럼 6종을 비교해 보세요.</p>
+          <p className="hero-description">국내 판매 세럼 RNT·TNA5·NTZ20을 30ml와 60ml로 만나보세요.</p>
         </div>
         <div className="hero-visual" id="brand-film">
           <Image
@@ -54,8 +54,8 @@ export default async function HomePage() {
           <CampaignFilm />
         </div>
         <div className="hero-actions">
-          <Link className="button button-dark" href="#one-bottle">내 세럼 찾기</Link>
-          <Link className="hero-secondary" href="#compare">6종 성분 비교</Link>
+          <Link className="button button-dark" href="#products">국내 판매 세럼 보기</Link>
+          <Link className="hero-secondary" href="#compare">국내·해외 세럼 비교</Link>
         </div>
       </section>
       <div className="section-shell shop-flow">

@@ -2,6 +2,7 @@ import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { cookies } from "next/headers";
+import { localDemoAdminConfigured, localDemoAdminId, localDemoAdminUser } from "./local-demo-admin";
 
 const filename = path.resolve(process.env.DEMO_DATA_DIRECTORY || ".data", "auth.json");
 const state = globalThis.__maryenbAuth ??= { queue: Promise.resolve() };
@@ -13,14 +14,16 @@ async function read() {
   catch (e) { if (e.code !== "ENOENT") throw e; return { users: [], sessions: [] }; }
 }
 
-export async function authenticate(action, input) {
+export async function authenticate(action, input, demoAdminEnabled = false) {
   const task = state.queue.then(async () => {
     const database = await read();
+    const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
     let user;
     if (action === "guest") {
       user = { id: `guest-${randomUUID()}`, name: "게스트", email: "", guest: true };
+    } else if (action === "login" && email === "admin" && demoAdminEnabled) {
+      user = localDemoAdminUser(input.password);
     } else {
-      const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
       const password = input.password;
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200 || typeof password !== "string" || password.length < 8 || password.length > 128) throw new Error("이메일과 비밀번호(8~128자)를 확인해 주세요.");
       user = database.users.find((u) => u.email === email);
@@ -37,7 +40,7 @@ export async function authenticate(action, input) {
       }
     }
     const token = randomBytes(32).toString("hex");
-    const maxAge = user.guest ? 86400 : 604800;
+    const maxAge = user.guest || user.id === localDemoAdminId ? 86400 : 604800;
     database.sessions = database.sessions.filter((s) => s.expiresAt > Date.now());
     database.sessions.push({ tokenHash: digest(token), user: publicUser(user), expiresAt: Date.now() + maxAge * 1000 });
     await save(database);
@@ -59,6 +62,7 @@ export async function getUser() {
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
   await state.queue;
   const session = (await read()).sessions.find((s) => s.tokenHash === digest(token) && s.expiresAt > Date.now());
+  if (session?.user.id === localDemoAdminId && !localDemoAdminConfigured()) return null;
   return session?.user ?? null;
 }
 

@@ -1,4 +1,6 @@
 import catalog from "../data/products.json";
+import { optionName, withDemoInventory } from "./product-market";
+import { linePrice } from "./product-price";
 
 const DATABASE = `maryenb-pages-demo-v1:${process.env.NEXT_PUBLIC_BASE_PATH || "/"}`;
 const SESSION = `maryenb-pages-session-v1:${process.env.NEXT_PUBLIC_BASE_PATH || "/"}`;
@@ -10,7 +12,8 @@ const methods = [
 ];
 function read() {
   const saved = localStorage.getItem(DATABASE);
-  return saved ? JSON.parse(saved) : { products: catalog.map((p) => ({ ...p, id: p.slug })), users: [], orders: [] };
+  const database = saved ? JSON.parse(saved) : { users: [], orders: [] };
+  return { ...database, products: withDemoInventory(catalog, database.products) };
 }
 function save(database) { localStorage.setItem(DATABASE, JSON.stringify(database)); }
 function user() { return JSON.parse(sessionStorage.getItem(SESSION) || "null"); }
@@ -70,12 +73,14 @@ export async function demoRequest(path, options = {}) {
       const seen = new Set();
       const lines = body.items.map((item) => {
         const product = database.products.find((p) => p.slug === item.slug && p.isActive);
-        if (!product || !(product.price > 0) || product.koreaSalesNote || seen.has(item.slug) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99 || product.stock < item.quantity) throw new Error("상품 수량 또는 재고를 확인해 주세요.");
+        if (!product || product.koreaSalesNote || seen.has(item.slug) || product.stock < item.quantity) throw new Error("상품 수량 또는 재고를 확인해 주세요.");
+        const total = linePrice(product, item.quantity);
+        if (total == null) throw new Error("선택한 수량의 판매가를 확인해 주세요.");
         seen.add(item.slug);
-        return { slug: product.slug, name: product.name, price: product.price, quantity: item.quantity };
+        return { slug: product.slug, name: optionName(product), price: product.price, quantity: item.quantity, lineTotal: total };
       });
       for (const line of lines) database.products.find((p) => p.slug === line.slug).stock -= line.quantity;
-      const order = { virtual: true, status: "SIMULATED", orderNumber: `demo-${crypto.randomUUID()}`, userId: currentUser.id, items: lines, method: body.method, shippingFee: 0, total: lines.reduce((sum, item) => sum + item.price * item.quantity, 0), createdAt: new Date().toISOString() };
+      const order = { virtual: true, status: "SIMULATED", orderNumber: `demo-${crypto.randomUUID()}`, userId: currentUser.id, items: lines, method: body.method, shippingFee: 0, total: lines.reduce((sum, item) => sum + item.lineTotal, 0), createdAt: new Date().toISOString() };
       database.orders.push(order);
       save(database);
       return json(order);

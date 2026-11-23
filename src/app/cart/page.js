@@ -7,6 +7,8 @@ import { Trash2 } from "lucide-react";
 import { ProductArt } from "../../components/product-art";
 import { useCart } from "../../components/cart-provider";
 import { formatPrice } from "../../lib/products";
+import { optionName } from "../../lib/product-market";
+import { linePrice, MAX_ORDER_QUANTITY } from "../../lib/product-price";
 import { QuantitySelector } from "../../components/quantity-selector";
 import { useAuth } from "../../components/auth-provider";
 
@@ -41,25 +43,25 @@ export default function CartPage() {
                 <Link
                   className="cart-item-art"
                   href={`/products/${item.slug}`}
-                  aria-label={`${item.name} 상세 보기`}
+                  aria-label={`${optionName(item)} 상세 보기`}
                 >
                   <ProductArt imageUrl={item.imageUrl} category="MARYENB" />
                 </Link>
                 <div className="cart-item-info">
-                  <Link href={`/products/${item.slug}`}>{item.name}</Link>
+                  <Link href={`/products/${item.slug}`}>{optionName(item)}</Link>
                   <span>
-                    {item.price === null
+                    {item.salesNote || (item.price === null
                       ? "판매가 확인 중"
-                      : `${formatPrice(item.price)}원`}
+                      : `${formatPrice(item.price)}원`)}
                   </span>
-                  {item.stock === 0 ? <span>품절</span> : item.quantity > item.stock ? <span>재고 {item.stock}개 · 수량을 줄여 주세요</span> : null}
-                  <QuantitySelector value={item.quantity} onChange={(value) => updateQuantity(item.id, value)} disabled={item.stock === 0 || item.unavailable} max={item.stock ?? 99} label={`${item.name} 수량`} />
+                  {!item.unavailable && (item.stock === 0 ? <span>품절</span> : item.quantity > Math.min(item.stock, MAX_ORDER_QUANTITY) ? <span>최대 {Math.min(item.stock, MAX_ORDER_QUANTITY)}개까지 선택할 수 있어요.</span> : null)}
+                  <QuantitySelector value={item.quantity} onChange={(value) => updateQuantity(item.id, value)} disabled={item.stock === 0 || item.unavailable} max={item.stock} label={`${optionName(item)} 수량`} />
                 </div>
                 <div className="cart-item-total">
                   <strong>
-                    {item.price === null
-                      ? "판매가 확인 중"
-                      : `${formatPrice(item.price * item.quantity)}원`}
+                    {item.unavailable ? "구매 불가" : linePrice(item, item.quantity) == null
+                      ? "금액 확인 필요"
+                      : `${formatPrice(linePrice(item, item.quantity))}원`}
                   </strong>
                   <button
                     className="remove-item"
@@ -84,7 +86,7 @@ export default function CartPage() {
               <strong>{checkout?.virtual ? "가상 주문 금액" : "총 결제 금액"}</strong>
               <strong>{subtotal == null || shippingFee == null ? "주문서에서 확인" : `${formatPrice(subtotal + shippingFee)}원`}</strong>
             </div>
-            {hasUnavailable ? <p role="status">상품의 재고와 수량을 확인해 주세요.</p> : <Link className="button button-dark checkout-button" href="/checkout">주문서 작성하기</Link>}
+            {hasUnavailable ? <p role="status">구매할 수 없는 상품을 삭제하거나 재고에 맞춰 수량을 조정해 주세요.</p> : <Link className="button button-dark checkout-button" href="/checkout">주문서 작성하기</Link>}
             {(checkout?.virtual || needsLogin) && <p className="checkout-note">{checkout.virtual ? "로그인 없이 가상 주문을 체험할 수 있어요." : "로그인 후 장바구니 상품으로 주문을 계속할 수 있어요."}</p>}
             {checkout && !checkout.virtual && paymentLabels && <p className="checkout-note">{paymentLabels}</p>}
             <Link className="text-link" href="/policies#delivery">배송·교환·반품 정책</Link>

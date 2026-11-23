@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./auth-provider";
 import { apiFetch } from "../lib/client-api";
+import { sizeLabel } from "../lib/product-market";
+import { linePrice, MAX_ORDER_QUANTITY } from "../lib/product-price";
 
 const CartContext = createContext(null);
 const storageKey = `maryenb-carts-v2:${process.env.NEXT_PUBLIC_BASE_PATH || "/"}`;
@@ -23,7 +25,7 @@ function mergeItems(accountItems, guestItems) {
   const merged = new Map(accountItems.map((item) => [item.slug, item]));
   for (const item of guestItems) {
     const previous = merged.get(item.slug);
-    merged.set(item.slug, { ...item, quantity: Math.min(99, item.quantity + (previous?.quantity || 0)) });
+    merged.set(item.slug, { ...item, quantity: Math.min(MAX_ORDER_QUANTITY, item.quantity + (previous?.quantity || 0)) });
   }
   return [...merged.values()];
 }
@@ -85,7 +87,11 @@ function CartStore({ children, account, legacyId, loading }) {
 
   const items = inventory ? savedItems.map((item) => {
     const product = inventory.find((product) => product.slug === item.slug);
-    return { ...item, price: product?.price ?? null, stock: product?.stock ?? 0, unavailable: !product || Boolean(product.koreaSalesNote) };
+    return {
+      ...item, volume: product ? sizeLabel(product) : item.volume, price: product?.price ?? null,
+      stock: product?.stock ?? 0, bundlePrices: product?.bundlePrices, unavailable: !product || Boolean(product.koreaSalesNote),
+      salesNote: product?.koreaSalesNote,
+    };
   }) : savedItems;
 
   function save(next) {
@@ -104,26 +110,28 @@ function CartStore({ children, account, legacyId, loading }) {
     const current = latest.current;
     const existing = current.find((item) => item.slug === product.slug);
     const total = (existing?.quantity || 0) + quantity;
-    if (total > Math.min(product.stock, 99)) return false;
-    const line = { id: product.id, slug: product.slug, name: product.name, imageUrl: product.imageUrl, price: product.price, stock: product.stock, quantity: total };
+    if (total > Math.min(product.stock, MAX_ORDER_QUANTITY)) return false;
+    const line = { id: product.id, slug: product.slug, name: product.name, volume: sizeLabel(product),
+      imageUrl: product.imageUrl, price: product.price, stock: product.stock, bundlePrices: product.bundlePrices, quantity: total };
     save(existing ? current.map((item) => item.slug === product.slug ? line : item) : [...current, line]);
     return true;
   }
 
   function updateQuantity(id, quantity) {
     const line = items.find((item) => item.id === id);
-    if (!line || !Number.isInteger(quantity) || quantity < 1 || quantity > Math.min(line.stock ?? 99, 99)) return;
+    if (!line || !Number.isInteger(quantity) || quantity < 1 || quantity > Math.min(line.stock ?? MAX_ORDER_QUANTITY, MAX_ORDER_QUANTITY)) return;
     save(latest.current.map((item) => item.id === id ? { ...item, quantity } : item));
   }
 
+  const amounts = items.map((item) => linePrice(item, item.quantity));
   const value = {
     items, ready, addItem, updateQuantity,
     refreshInventory: () => setInventoryRevision((revision) => revision + 1),
     clearCart: () => save([]),
     removeItem: (id) => save(latest.current.filter((item) => item.id !== id)),
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-    subtotal: items.some((item) => item.price == null) ? null : items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    hasUnavailable: items.some((item) => item.unavailable || !(item.price > 0) || item.quantity > item.stock),
+    subtotal: amounts.includes(null) ? null : amounts.reduce((sum, amount) => sum + amount, 0),
+    hasUnavailable: items.some((item, index) => item.unavailable || amounts[index] == null || item.quantity > item.stock),
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

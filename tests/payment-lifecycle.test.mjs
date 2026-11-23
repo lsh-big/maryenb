@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import catalog from "../src/data/products.json" with { type: "json" };
+import { familyCode, overseasOnly, sizeLabel, withDemoInventory } from "../src/lib/product-market.js";
+import { extraUnitPrice, linePrice, MAX_ORDER_QUANTITY } from "../src/lib/product-price.js";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import { settleOrder, validatePayment } from "../src/lib/payment-lifecycle.js";
@@ -123,13 +126,55 @@ test("unconfirmed sale prices and stock are suppressed and explicit free shippin
       else process.env[name] = value;
     }
   });
-  const product = { code: "ANC5", price: 15700, compareAtPrice: 17000, stock: 100 };
+  const product = { code: "RNT", price: 15700, compareAtPrice: 17000, stock: 100 };
   process.env.SALES_CATALOG_CONFIRMED = "false";
-  assert.deepEqual(publicStoreProduct(product), { code: "ANC5", price: null, compareAtPrice: null, stock: 0, purchaseUnavailable: true });
+  assert.deepEqual(publicStoreProduct(product), { code: "RNT", price: null, compareAtPrice: null, stock: 0, purchaseUnavailable: true });
   process.env.SALES_CATALOG_CONFIRMED = "true";
   assert.equal(publicStoreProduct(product), product);
+  const overseas = publicStoreProduct({ ...product, code: "ANC5" });
+  assert.equal(overseas.price, null);
+  assert.equal(overseas.stock, 0);
+  assert.match(overseas.koreaSalesNote, /해외 전용/);
   delete process.env.SHIPPING_FEE;
   assert.equal(configuredShippingFee(), null);
   process.env.SHIPPING_FEE = "0";
   assert.equal(configuredShippingFee(), 0);
+});
+
+test("legacy demo inventory preserves domestic stock and adopts the current market and sizes", () => {
+  const inventory = withDemoInventory(catalog, [
+    { slug: "anc5-azelaic-acid-serum", price: 15700, stock: 99 },
+    { slug: "rnt-retinol-serum", stock: 97 },
+  ]);
+  assert.deepEqual(inventory.filter(overseasOnly).map(({ code }) => code).sort(), ["ANC10", "ANC5", "VNC15"]);
+  assert.ok(inventory.filter(overseasOnly).every(({ price, stock, koreaSalesNote }) => price === null && stock === 0 && koreaSalesNote));
+  for (const code of ["RNT", "TNA5", "NTZ20"]) {
+    const sizes = inventory.filter((product) => familyCode(product.code) === code);
+    assert.deepEqual(sizes.map(sizeLabel), ["30ml", "60ml"]);
+    assert.notEqual(sizes[0].slug, sizes[1].slug);
+  }
+  assert.equal(inventory.find(({ code }) => code === "RNT").stock, 97);
+  const rnt60 = inventory.find(({ code }) => code === "RNT-60ML");
+  assert.equal(withDemoInventory([rnt60], [{ ...rnt60, price: null, stock: 0 }])[0].stock, 100);
+});
+
+test("each domestic size keeps the bundle totals and charges the same amount for each bottle above three", () => {
+  const expected = {
+    RNT: [13200, 25740, 37120], "RNT-60ML": [16530, 32190, 46300],
+    TNA5: [15120, 29480, 42520], "TNA5-60ML": [18330, 35690, 51340],
+    NTZ20: [14460, 28200, 40680], "NTZ20-60ML": [17700, 34450, 49560],
+  };
+  for (const [code, amounts] of Object.entries(expected)) {
+    const product = catalog.find((item) => item.code === code);
+    assert.deepEqual([1, 2, 3].map((quantity) => linePrice(product, quantity)), amounts);
+    assert.equal(product.price, amounts[0]);
+    const additional = Math.round(amounts[2] / 3);
+    assert.equal(extraUnitPrice(product), additional);
+    assert.equal(linePrice(product, 4), amounts[2] + additional);
+    assert.equal(linePrice(product, 5), amounts[2] + 2 * additional);
+    assert.equal(linePrice(product, MAX_ORDER_QUANTITY), amounts[2] + 96 * additional);
+    assert.equal(linePrice(product, MAX_ORDER_QUANTITY + 1), null);
+  }
+  assert.equal(linePrice({ price: 14000, bundlePrices: [] }, 2), 28000);
+  assert.equal(linePrice({ price: 14000, bundlePrices: [] }, 4), 56000);
 });

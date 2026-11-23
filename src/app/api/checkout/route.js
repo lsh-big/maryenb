@@ -7,6 +7,8 @@ import { isVirtualDatabase } from "../../../lib/database-mode";
 import { createVirtualOrder } from "../../../lib/virtual-db";
 import { getUser } from "../../../lib/auth";
 import { hasSameOrigin } from "../../../lib/request-origin";
+import { optionName, overseasOnly } from "../../../lib/product-market";
+import { linePrice, MAX_ORDER_QUANTITY } from "../../../lib/product-price";
 
 export async function GET() {
   if (isVirtualDatabase()) return Response.json({ virtual: true, methods: Object.entries(paymentMethods).map(([id, method]) => ({ id, label: method.label, enabled: true })), shippingFee: 0 });
@@ -30,7 +32,7 @@ export async function POST(request) {
     if (customer.addressDetail && (typeof customer.addressDetail !== "string" || customer.addressDetail.length > 200)) throw new Error("상세주소를 확인해 주세요.");
     const seen = new Set();
     for (const item of items) {
-      if (typeof item.slug !== "string" || !/^[a-z0-9-]{1,100}$/.test(item.slug) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99 || seen.has(item.slug)) throw new Error("상품 수량을 확인해 주세요.");
+      if (typeof item.slug !== "string" || !/^[a-z0-9-]{1,100}$/.test(item.slug) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_ORDER_QUANTITY || seen.has(item.slug)) throw new Error("상품 수량을 확인해 주세요.");
       seen.add(item.slug);
     }
     if (isVirtualDatabase()) return Response.json(await createVirtualOrder(items, method, user.id));
@@ -43,12 +45,20 @@ export async function POST(request) {
       if (products.length !== items.length) throw new Error("구매할 수 없는 상품이 있습니다.");
       for (const product of products.sort((a, b) => a.id - b.id)) {
         const item = items.find(({ slug }) => slug === product.slug);
-        if (!product || product.price === null || Number(product.price) < 1 || product.koreaSalesNote) throw new Error("구매할 수 없는 상품이 있습니다.");
-        const reserved = await tx.product.updateMany({ where: { id: product.id, isActive: true, price: product.price, koreaSalesNote: null, stock: { gte: item.quantity } }, data: { stock: { decrement: item.quantity } } });
+        if (overseasOnly(product) || product.price === null || Number(product.price) < 1 || product.koreaSalesNote) throw new Error("구매할 수 없는 상품이 있습니다.");
+        const total = linePrice(product, item.quantity);
+        if (total == null) throw new Error("선택한 수량의 판매가를 확인해 주세요.");
+        const reserved = await tx.product.updateMany({
+          where: {
+            id: product.id, isActive: true, price: product.price, bundlePrices: { equals: product.bundlePrices },
+            koreaSalesNote: null, stock: { gte: item.quantity },
+          },
+          data: { stock: { decrement: item.quantity } },
+        });
         if (!reserved.count) throw new Error(`${product.name}: 재고가 부족합니다.`);
-        lines.push({ productId: product.id, productName: product.name, unitPrice: product.price, quantity: item.quantity });
+        lines.push({ productId: product.id, productName: optionName(product), unitPrice: product.price, quantity: item.quantity, lineTotal: total });
       }
-      const subtotal = lines.reduce((sum, item) => sum + Number(item.unitPrice) * item.quantity, 0);
+      const subtotal = lines.reduce((sum, item) => sum + item.lineTotal, 0);
       return tx.order.create({ data: { orderNumber: `mb-${randomUUID()}`, ownerId: user.id, storeId,
         reservationExpiresAt: expiresAt, nextPaymentCheckAt: expiresAt, customerEmail: customer.email, recipientName: customer.name,
         phone: customer.phone, postalCode: customer.postalCode, address: customer.address, addressDetail: customer.addressDetail || "",
